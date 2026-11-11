@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cerebro Digital · Gobernanza de la IA en la UNAL</title>
+<style>
+  :root{
+    --verde:#1f4037; --verde-prof:#0e1f1a; --dorado:#b89347; --crema:#f4f1e9;
+    --azul:#2962ff; --teal:#0f8c82; --control:#e8591c; --socio:#17a06a; --cned:#2b5c9b;
+    --rojo:#c0392b; --purpura:#6b4fa0; --amarillo:#e8c341; --gris:#8a93a6;
+    --bg:#0a0f14; --panel:rgba(14,31,26,.92); --borde:rgba(184,147,71,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 50% 40%, #11212b 0%, #0a0f14 70%);
+    color:#e9eef0; overflow:hidden;
+  }
+  #stage{position:fixed;inset:0;}
+  svg{width:100%;height:100%;display:block;cursor:grab;}
+  svg:active{cursor:grabbing;}
+
+  /* cabecera */
+  .hdr{position:fixed;top:0;left:0;right:0;padding:16px 22px;z-index:10;
+    background:linear-gradient(180deg,rgba(10,15,20,.9),rgba(10,15,20,0));pointer-events:none;}
+  .hdr .k{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--dorado);font-weight:700;}
+  .hdr h1{font-size:21px;margin-top:3px;font-weight:700;}
+  .hdr h1 span{color:var(--dorado);}
+  .hdr p{font-size:12.5px;color:#aeb8bc;margin-top:3px;max-width:680px;}
+
+  /* leyenda (lóbulos) */
+  .legend{position:fixed;left:18px;bottom:18px;z-index:10;background:var(--panel);
+    border:1px solid var(--borde);border-radius:14px;padding:12px 14px;max-width:240px;backdrop-filter:blur(6px);}
+  .legend h3{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin-bottom:8px;}
+  .legend .row{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:5px;cursor:pointer;opacity:.9;}
+  .legend .row:hover{opacity:1;}
+  .legend .row.off{opacity:.35;}
+  .legend .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 8px currentColor;}
+
+  /* panel de detalle */
+  #panel{position:fixed;right:18px;top:92px;width:330px;max-width:calc(100vw - 36px);z-index:11;
+    background:var(--panel);border:1px solid var(--borde);border-radius:16px;overflow:hidden;
+    transform:translateX(380px);transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .3s;opacity:0;
+    backdrop-filter:blur(8px);box-shadow:0 18px 50px rgba(0,0,0,.5);}
+  #panel.show{transform:none;opacity:1;}
+  #panel .ph{padding:15px 17px;color:#fff;}
+  #panel .ph .lob{font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.9;}
+  #panel .ph h2{font-size:18px;margin-top:4px;line-height:1.25;}
+  #panel .pb{padding:14px 17px;max-height:52vh;overflow:auto;}
+  #panel .pb p{font-size:13px;line-height:1.55;color:#dfe6e8;}
+  #panel .pb h4{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin:14px 0 6px;}
+  #panel .pb ul{list-style:none;}
+  #panel .pb li{font-size:12.5px;line-height:1.5;padding-left:15px;position:relative;margin-bottom:5px;color:#cfd8da;}
+  #panel .pb li::before{content:"▸";position:absolute;left:0;color:var(--dorado);}
+  #panel .pb a{color:var(--amarillo);word-break:break-all;}
+  #panel .x{position:absolute;top:12px;right:14px;cursor:pointer;background:rgba(255,255,255,.14);
+    border:none;color:#fff;width:28px;height:28px;border-radius:8px;font-size:15px;line-height:1;}
+  #panel .x:hover{background:rgba(255,255,255,.26);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .chip{font-size:10.5px;background:rgba(184,147,71,.18);border:1px solid var(--borde);color:var(--crema);
+    padding:3px 9px;border-radius:20px;cursor:pointer;}
+  .chip:hover{background:rgba(184,147,71,.34);}
+
+  /* controles */
+  .ctl{position:fixed;right:18px;bottom:18px;z-index:10;display:flex;gap:8px;}
+  .ctl button{background:var(--panel);border:1px solid var(--borde);color:var(--crema);
+    border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(6px);}
+  .ctl button:hover{background:rgba(184,147,71,.25);}
+  .ctl button.on{background:var(--dorado);color:var(--verde-prof);}
+
+  .hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;font-size:11.5px;
+    color:#8ea0a6;background:rgba(10,15,20,.55);padding:6px 14px;border-radius:20px;pointer-events:none;}
+
+  /* nodos */
+  .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
+  .node{cursor:pointer;}
+  .node .halo{transition:opacity .3s,r .3s;}
+  .node .core{transition:transform .25s, filter .3s;}
+  .node:hover .core{filter:brightness(1.3);}
+  .node text{font-family:'Segoe UI',sans-serif;fill:#e9eef0;pointer-events:none;
+    text-anchor:middle;font-weight:600;paint-order:stroke;stroke:#0a0f14;stroke-width:3px;}
+  .node.dim{opacity:.12;}
+  .edge.dim{stroke-opacity:.04 !important;}
+  .node.sel .ring{opacity:1;}
+  .ring{opacity:0;transition:opacity .3s;}
+  @keyframes pulse{0%{r:3;opacity:.9;}100%{r:0;opacity:0;}}
+  .spark{fill:var(--amarillo);}
+  @media(max-width:620px){.legend{display:none;} .hdr p{display:none;}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="k">Cerebro Digital · DNED–DIVULAB</div>
+  <h1>Modelo de Gobernanza de la <span>Inteligencia Artificial</span> · UNAL</h1>
+  <p>Red de conocimiento del repositorio: cada nodo es un concepto o entregable; las sinapsis muestran cómo se relacionan. Clic en un nodo para ver su detalle · arrastra el lienzo · rueda para zoom.</p>
+</div>
+
+<div id="stage">
+  <svg id="brain" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity=".9"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="soft"><feGaussianBlur stdDeviation="2.2"/></filter>
+    </defs>
+    <g id="world">
+      <g id="edges"></g>
+      <g id="sparks"></g>
+      <g id="nodes"></g>
+    </g>
+  </svg>
+</div>
+
+<div class="legend" id="legend"><h3>Lóbulos del modelo</h3></div>
+
+<div class="ctl">
+  <button id="btnThink" class="on">⚡ Pensar</button>
+  <button id="btnReset">⟳ Centrar</button>
+</div>
+
+<div id="panel">
+  <div class="ph" id="ph"><button class="x" id="closeP">✕</button><div class="lob" id="pLob"></div><h2 id="pTit"></h2></div>
+  <div class="pb" id="pBody"></div>
+</div>
+
+<div class="hint">🧠 Haz clic en un nodo para explorar · los pulsos representan el “pensamiento” del modelo recorriendo las sinapsis</div>
+
+<script>
+/* ============================================================
+   CEREBRO DIGITAL — red de conocimiento del repositorio
+   Autocontenido (SVG + JS, sin dependencias externas).
+   ============================================================ */
+
+// --- Lóbulos (regiones temáticas) ---
+const LOBES={
+  gob:   {name:'Estructura de gobernanza', color:'#2b5c9b'},
+  oper:  {name:'Operación y decisión',     color:'#0f8c82'},
+  riesgo:{name:'Riesgo y ética',           color:'#e8591c'},
+  ref:   {name:'Referencia y benchmarking',color:'#6b4fa0'},
+  cocre: {name:'Mesas de co-creación',     color:'#17a06a'},
+  entre: {name:'Entregables del repositorio', color:'#b89347'},
+};
+
+// --- Nodos: id, lóbulo, etiqueta, tamaño (importancia), x, y, detalle ---
+// coordenadas en el viewBox 1200x760, agrupadas por región
+const NODES=[
+  // núcleo central
+  {id:'modelo',lobe:'gob',l:'Modelo de\nGobernanza IA',r:34,x:600,y:380,hub:true,
+   desc:'Modelo multinivel, participativo y multicampus para el uso responsable y la apropiación ética de la IA en la UNAL. Es el núcleo que articula todo el ecosistema.',
+   bullets:['Multinivel: CNED → Mesa Técnica → Comunidad','Participativo y multiestamentario','Multicampus (9 sedes)']},
+
+  // LÓBULO GOBERNANZA (arriba-izquierda)
+  {id:'cned',lobe:'gob',l:'CNED',r:22,x:360,y:150,
+   desc:'Comité Nacional de Estrategia Digital: define la política de alto nivel y aprueba la normativa de IA. Es la instancia a la que se adscribe la Mesa Técnica.',
+   bullets:['Define política y norma','Aprueba y resuelve escalamientos','Res. Rectoría 614/2020']},
+  {id:'mesa',lobe:'gob',l:'Mesa Técnica\nde IA',r:24,x:470,y:250,
+   desc:'Sala especializada adscrita al CNED. Ejecuta, evalúa y audita mediante cuatro núcleos funcionales; opera de forma colegiada.',
+   bullets:['Ejecución · evaluación · auditoría','4 núcleos funcionales','Ciclo de vida PLASI']},
+  {id:'comunidad',lobe:'gob',l:'Comunidad\n9 sedes',r:20,x:250,y:270,
+   desc:'Facultades, grupos, laboratorios vivos y estamentos de las nueve sedes. Destinataria y co-creadora del modelo.',
+   bullets:['Usa y co-crea','Radica casos','Conocimiento situado']},
+  {id:'subsid',lobe:'gob',l:'Subsidiariedad',r:16,x:330,y:360,
+   desc:'Se decide en el nivel más cercano al riesgo y al valor; se centraliza solo por excepción (alto riesgo, datos sensibles o estándares comunes).',
+   bullets:['Descentralizar por defecto','Centralizar por excepción']},
+
+  // LÓBULO OPERACIÓN (abajo-centro)
+  {id:'plenaria',lobe:'oper',l:'Plenaria de\nDelegados',r:22,x:560,y:560,
+   desc:'Órgano colegiado con un delegado por núcleo. Radica los casos, los traslada a trámite y delibera para emitir una decisión colegiada.',
+   bullets:['1 delegado por núcleo','Radica · tramita · delibera','Decisión colegiada']},
+  {id:'quorum',lobe:'oper',l:'Quórum y\nvotación',r:17,x:680,y:620,
+   desc:'Regla de decisión: quórum mínimo (≥3 de 4) y regla de prevalencia: una objeción por riesgo a derechos pesa más que la mayoría.',
+   bullets:['Quórum ≥ 3 de 4','Objeción prevalente → veto/escala']},
+  {id:'plasi',lobe:'oper',l:'Ciclo PLASI',r:16,x:470,y:640,
+   desc:'Planeación, Lineamiento, Aprobación, Seguimiento e Implementación: acompaña el sistema de IA en todo su ciclo de vida.',
+   bullets:['5 fases con control','Del caso al despliegue']},
+  {id:'simulador',lobe:'oper',l:'Simulador',r:15,x:700,y:510,
+   desc:'Recorrido interactivo de una iniciativa de IA por el modelo: riesgo, subsidiariedad, trámite por núcleos y veredicto.',
+   bullets:['Facultad → Sede → Mesa','Dictamen colegiado']},
+
+  // LÓBULO RIESGO Y ÉTICA (derecha)
+  {id:'riesgo',lobe:'riesgo',l:'Niveles de\nriesgo',r:21,x:850,y:360,
+   desc:'El control se gradúa por afectación a derechos fundamentales, no por el dominio de aplicación: Bajo · Medio · Alto · Inaceptable.',
+   bullets:['4 niveles','Por derechos, no por dominio','Autoridad según nivel']},
+  {id:'taxonomia',lobe:'riesgo',l:'Taxonomía\nde IA',r:17,x:950,y:290,
+   desc:'Clasifica los sistemas de IA por propósito/origen (productividad, analítica, datos sensibles, automatización de decisiones, investigación).',
+   bullets:['Por propósito y origen','Riesgo típico por tipo']},
+  {id:'raci',lobe:'riesgo',l:'Matriz RACI',r:18,x:900,y:470,
+   desc:'Hace trazable “quién decide qué”: Responsable, Aprobador, Consultado, Informado (y Supervisa/Suspende) por actividad y nivel de riesgo.',
+   bullets:['R · A · C · I · S','Trazabilidad de la decisión']},
+  {id:'green',lobe:'riesgo',l:'Green AI',r:14,x:980,y:430,
+   desc:'Sostenibilidad como eje transversal: eficiencia energética, huella de carbono y manejo de RAEE.',
+   bullets:['Eficiencia y huella','Eje transversal']},
+
+  // LÓBULO REFERENCIA (arriba-derecha)
+  {id:'bench',lobe:'ref',l:'Benchmarking',r:19,x:820,y:170,
+   desc:'Referenciación internacional que fundamenta el modelo propio: no se adopta ninguno tal cual, se extraen aprendizajes.',
+   bullets:['Norte + Sur Global','Aprendizajes transferibles']},
+  {id:'norte',lobe:'ref',l:'MIT · UCLA\nStanford',r:15,x:930,y:120,
+   desc:'Norte Global: MIT (descentralizado), UCLA (matricial, veto clínico) y Stanford (hub-and-spoke, estándares).',
+   bullets:['Lógicas de decisión','Estándares y evidencia']},
+  {id:'sur',lobe:'ref',l:'Sur Global',r:15,x:700,y:110,
+   desc:'Referentes cercanos a la UNAL: Tec de Monterrey, USP, UNAM e INTEGRITY-AI (con U. del Cauca y U. San Buenaventura).',
+   bullets:['Escala pública','Multicampus · red de pares']},
+
+  // LÓBULO MESAS DE CO-CREACIÓN (abajo-izquierda)
+  {id:'cocre',lobe:'cocre',l:'Co-creación\n4 sesiones',r:20,x:330,y:540,
+   desc:'Metodología de co-creación: cada mesa trabaja en 4 sesiones ajustando el documento de forma incremental por versiones (v0.1 → v0.2 → v0.3 → v1.0).',
+   bullets:['4 sesiones por mesa','Incremental por versiones','v0.1 → v1.0']},
+  {id:'mGC',lobe:'cocre',l:'Gestión del\ncambio',r:12,x:190,y:470,desc:'Mesa: Gestión del cambio y apropiación ética de la IA.',bullets:['Entregable: Guía de gestión del cambio']},
+  {id:'mPR',lobe:'cocre',l:'Principios\néticos',r:12,x:170,y:560,desc:'Mesa: Principios, usos y límites éticos de la IA.',bullets:['Entregable: Documento de principios']},
+  {id:'mIA',lobe:'cocre',l:'Integridad\nacadémica',r:12,x:220,y:650,desc:'Mesa: Integridad académica y citación responsable.',bullets:['Entregable: Lineamiento de integridad']},
+  {id:'mCO',lobe:'cocre',l:'Datos y\nconsentim.',r:12,x:340,y:670,desc:'Mesa: Consentimiento informado y protección de datos (Habeas Data).',bullets:['Entregable: Guía de protección de datos']},
+  {id:'mRG',lobe:'cocre',l:'Riesgos\néticos',r:12,x:120,y:640,desc:'Mesa: Identificación, evaluación y gestión de riesgos éticos.',bullets:['Entregable: Marco de riesgos éticos']},
+  {id:'mDC',lobe:'cocre',l:'Diversidad\netnoeduc.',r:12,x:150,y:370,desc:'Mesa: IA, diversidad cultural y enfoque etnoeducativo.',bullets:['Entregable: Lineamiento etnoeducativo']},
+
+  // LÓBULO ENTREGABLES (perímetro, dorado)
+  {id:'gemelo',lobe:'entre',l:'Gemelo 3D',r:16,x:600,y:180,
+   desc:'Gemelo digital 3D del modelo: estructura navegable (CNED, Mesa, núcleos, sedes, satélites de referencia y línea de tiempo).',
+   bullets:['gemelo-digital-...html','Three.js · interactivo']},
+  {id:'dash',lobe:'entre',l:'Dashboard',r:17,x:600,y:600,
+   desc:'Dashboard analítico por secciones: estructura, procesos, riesgo, RACI, referencia, simulador, sesiones, participantes y mesas de co-creación.',
+   bullets:['dashboard-...html','11 secciones · Chart.js']},
+  {id:'docs',lobe:'entre',l:'Documentos\nWord',r:15,x:1060,y:250,
+   desc:'Propuesta Mesa Técnica (sala CNED), Benchmarking internacional y Documento del modelo con anexos A–J; gráficos y diagramas editables.',
+   bullets:['3 .docx + anexos','OOXML sin dependencias']},
+  {id:'brief',lobe:'entre',l:'Brief',r:13,x:1070,y:420,
+   desc:'Brief de la ponencia (MD/PDF/DOCX) con abstract, objetivos, agenda y mensajes clave.',
+   bullets:['brief-...md/.pdf/.docx']},
+  {id:'ppt',lobe:'entre',l:'Presentación',r:14,x:1010,y:560,
+   desc:'Presentación de 14 diapositivas (16:9) con diagramas y 2 gráficos nativos editables; animaciones selectivas.',
+   bullets:['presentacion-...pptx','gráficos editables']},
+  {id:'roadmap',lobe:'entre',l:'Roadmap\n30 min',r:13,x:470,y:120,
+   desc:'Guion de exposición de 30 minutos (MD/HTML/PDF) con cronómetro por bloque y gráficos de apoyo.',
+   bullets:['roadmap-...md/.html/.pdf']},
+  {id:'repo',lobe:'entre',l:'Repositorio\nGitHub',r:15,x:900,y:650,
+   desc:'Todo el proyecto publicado en GitHub: wamartinezma-lab/Gobernanza_IA_UNAL (rama main).',
+   bullets:['21 archivos','Generadores reproducibles'],
+   link:'https://github.com/wamartinezma-lab/Gobernanza_IA_UNAL'},
+];
+
+// --- Sinapsis (relaciones entre conceptos) ---
+const EDGES=[
+  ['modelo','cned'],['modelo','mesa'],['modelo','comunidad'],['modelo','subsid'],
+  ['cned','mesa'],['mesa','comunidad'],['mesa','plenaria'],['mesa','plasi'],
+  ['plenaria','quorum'],['plenaria','simulador'],['plenaria','raci'],['plasi','simulador'],
+  ['modelo','riesgo'],['riesgo','taxonomia'],['riesgo','raci'],['riesgo','green'],['subsid','riesgo'],
+  ['modelo','bench'],['bench','norte'],['bench','sur'],['bench','riesgo'],
+  ['modelo','cocre'],['cocre','mGC'],['cocre','mPR'],['cocre','mIA'],['cocre','mCO'],['cocre','mRG'],['cocre','mDC'],
+  ['cocre','comunidad'],['mCO','riesgo'],['mRG','riesgo'],['mPR','riesgo'],
+  ['modelo','gemelo'],['modelo','dash'],['dash','simulador'],['dash','cocre'],['dash','raci'],
+  ['docs','mesa'],['docs','bench'],['brief','modelo'],['ppt','dash'],['roadmap','brief'],
+  ['repo','gemelo'],['repo','dash'],['repo','docs'],['repo','ppt'],['repo','brief'],['repo','roadmap'],
+];
+
+// =========================================================
+//  RENDER
+// =========================================================
+const NS='http://www.w3.org/2000/svg';
+const gEdges=document.getElementById('edges');
+const gNodes=document.getElementById('nodes');
+const gSparks=document.getElementById('sparks');
+const idx={}; NODES.forEach(n=>idx[n.id]=n);
+const adj={}; NODES.forEach(n=>adj[n.id]=new Set());
+EDGES.forEach(([a,b])=>{adj[a].add(b);adj[b].add(a);});
+
+function lc(id){return LOBES[idx[id].lobe].color;}
+
+// edges
+const edgeEls=[];
+EDGES.forEach(([a,a2])=>{
+  const A=idx[a],B=idx[a2];
+  const e=document.createElementNS(NS,'line');
+  e.setAttribute('x1',A.x);e.setAttribute('y1',A.y);
+  e.setAttribute('x2',B.x);e.setAttribute('y2',B.y);
+  e.setAttribute('stroke',lc(a));
+  e.setAttribute('stroke-opacity','.22');
+  e.setAttribute('stroke-width', (A.hub||B.hub)?1.8:1.1);
+  e.setAttribute('class','edge');
+  e.dataset.a=a; e.dataset.b=a2;
+  gEdges.appendChild(e); edgeEls.push(e);
+});
+
+// nodes
+NODES.forEach(n=>{
+  const g=document.createElementNS(NS,'g');
+  g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n.x},${n.y})`);
+  g.dataset.id=n.id;
+  const col=lc(n.id);
+  // halo
+  const halo=document.createElementNS(NS,'circle');
+  halo.setAttribute('r',n.r*1.9); halo.setAttribute('fill','url(#glow)');
+  halo.setAttribute('opacity',n.hub?.5:.3); halo.setAttribute('class','halo');
+  g.appendChild(halo);
+  // selection ring
+  const ring=document.createElementNS(NS,'circle');
+  ring.setAttribute('r',n.r+7); ring.setAttribute('fill','none');
+  ring.setAttribute('stroke',col); ring.setAttribute('stroke-width','2');
+  ring.setAttribute('stroke-dasharray','4 4'); ring.setAttribute('class','ring');
+  g.appendChild(ring);
+  // core
+  const c=document.createElementNS(NS,'circle');
+  c.setAttribute('r',n.r); c.setAttribute('fill',col);
+  c.setAttribute('class','core');
+  c.setAttribute('stroke','rgba(255,255,255,.65)'); c.setAttribute('stroke-width',n.hub?2:1);
+  g.appendChild(c);
+  // label (multilínea)
+  const lines=n.l.split('\n');
+  const t=document.createElementNS(NS,'text');
+  t.setAttribute('y', n.r + 14);
+  t.setAttribute('font-size', n.hub?13:(n.r>=16?11.5:10));
+  lines.forEach((ln,i)=>{
+    const ts=document.createElementNS(NS,'tspan');
+    ts.setAttribute('x',0); ts.setAttribute('dy', i===0?0:12.5);
+    ts.textContent=ln; t.appendChild(ts);
+  });
+  g.appendChild(t);
+  g.addEventListener('click',ev=>{ev.stopPropagation();select(n.id);});
+  gNodes.appendChild(g);
+  n._g=g; n._ring=ring;
+});
+
+// =========================================================
+//  SELECCIÓN / PANEL
+// =========================================================
+let selected=null;
+function select(id){
+  selected=id;
+  const n=idx[id];
+  const neigh=adj[id];
+  NODES.forEach(m=>{
+    const on = m.id===id || neigh.has(m.id);
+    m._g.classList.toggle('dim', !on);
+    m._g.classList.toggle('sel', m.id===id);
+  });
+  edgeEls.forEach(e=>{
+    const on = e.dataset.a===id || e.dataset.b===id;
+    e.classList.toggle('dim', !on);
+    e.setAttribute('stroke-opacity', on?'.8':'.04');
+    e.setAttribute('stroke-width', on?2.4:1);
+  });
+  // panel
+  const lob=LOBES[n.lobe];
+  document.getElementById('ph').style.background=`linear-gradient(135deg,${lob.color},${shade(lob.color,-30)})`;
+  document.getElementById('pLob').textContent=lob.name;
+  document.getElementById('pTit').textContent=n.l.replace(/\n/g,' ');
+  let html=`<p>${n.desc}</p>`;
+  if(n.bullets&&n.bullets.length){html+='<h4>Puntos clave</h4><ul>'+n.bullets.map(b=>`<li>${b}</li>`).join('')+'</ul>';}
+  // vecinos como chips navegables
+  const chips=[...neigh].map(v=>`<span class="chip" data-go="${v}">${idx[v].l.replace(/\n/g,' ')}</span>`).join('');
+  html+='<h4>Conexiones</h4><div class="chips">'+chips+'</div>';
+  if(n.link){html+=`<h4>Enlace</h4><p><a href="${n.link}" target="_blank" rel="noopener">${n.link}</a></p>`;}
+  document.getElementById('pBody').innerHTML=html;
+  document.getElementById('panel').classList.add('show');
+  document.querySelectorAll('.chip[data-go]').forEach(ch=>ch.onclick=()=>select(ch.dataset.go));
+}
+function clearSel(){
+  selected=null;
+  NODES.forEach(m=>{m._g.classList.remove('dim','sel');});
+  edgeEls.forEach(e=>{e.classList.remove('dim');e.setAttribute('stroke-opacity','.22');
+    e.setAttribute('stroke-width',(idx[e.dataset.a].hub||idx[e.dataset.b].hub)?1.8:1.1);});
+  document.getElementById('panel').classList.remove('show');
+}
+document.getElementById('closeP').onclick=clearSel;
+document.getElementById('brain').addEventListener('click',clearSel);
+
+function shade(hex,p){
+  const n=parseInt(hex.slice(1),16);let r=(n>>16)+p,g=((n>>8)&255)+p,b=(n&255)+p;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+}
+
+// =========================================================
+//  LEYENDA (toggle por lóbulo)
+// =========================================================
+const legend=document.getElementById('legend');
+const lobeOff={};
+Object.entries(LOBES).forEach(([k,v])=>{
+  const row=document.createElement('div'); row.className='row';
+  row.innerHTML=`<span class="dot" style="color:${v.color};background:${v.color}"></span>${v.name}`;
+  row.onclick=()=>{
+    lobeOff[k]=!lobeOff[k]; row.classList.toggle('off',lobeOff[k]);
+    NODES.filter(n=>n.lobe===k).forEach(n=>n._g.style.display=lobeOff[k]?'none':'');
+    edgeEls.forEach(e=>{
+      const hide=lobeOff[idx[e.dataset.a].lobe]||lobeOff[idx[e.dataset.b].lobe];
+      e.style.display=hide?'none':'';
+    });
+  };
+  legend.appendChild(row);
+});
+
+// =========================================================
+//  PAN & ZOOM
+// =========================================================
+const svg=document.getElementById('brain'), world=document.getElementById('world');
+let vb={x:0,y:0,w:1200,h:760}, pan=null;
+function applyVB(){svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);}
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY>0?1.1:0.9;
+  const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const loc=pt.matrixTransform(svg.getScreenCTM().inverse());
+  vb.x=loc.x-(loc.x-vb.x)*f; vb.y=loc.y-(loc.y-vb.y)*f; vb.w*=f; vb.h*=f;
+  applyVB();
+},{passive:false});
+svg.addEventListener('mousedown',e=>{pan={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y};});
+window.addEventListener('mousemove',e=>{
+  if(!pan)return;
+  const s=vb.w/svg.clientWidth;
+  vb.x=pan.vx-(e.clientX-pan.x)*s; vb.y=pan.vy-(e.clientY-pan.y)*s; applyVB();
+});
+window.addEventListener('mouseup',()=>pan=null);
+document.getElementById('btnReset').onclick=()=>{vb={x:0,y:0,w:1200,h:760};applyVB();clearSel();};
+
+// =========================================================
+//  "PENSAMIENTO": pulsos recorriendo sinapsis
+// =========================================================
+let thinking=true;
+function spark(){
+  if(!thinking) return;
+  // elige una arista visible al azar y lanza un pulso de A->B
+  const vis=EDGES.filter(([a,b])=>!lobeOff[idx[a].lobe]&&!lobeOff[idx[b].lobe]);
+  if(vis.length){
+    const [a,b]=vis[Math.floor(Math.random()*vis.length)];
+    const A=idx[a],B=idx[b];
+    const dot=document.createElementNS(NS,'circle');
+    dot.setAttribute('class','spark'); dot.setAttribute('r',3.2);
+    dot.setAttribute('cx',A.x); dot.setAttribute('cy',A.y);
+    gSparks.appendChild(dot);
+    const dur=650+Math.random()*500, t0=performance.now();
+    (function step(t){
+      const k=Math.min(1,(t-t0)/dur);
+      dot.setAttribute('cx',A.x+(B.x-A.x)*k);
+      dot.setAttribute('cy',A.y+(B.y-A.y)*k);
+      dot.setAttribute('opacity', (1-Math.abs(k-0.5)*1.6).toFixed(2));
+      if(k<1) requestAnimationFrame(step); else dot.remove();
+    })(t0);
+  }
+  setTimeout(spark, 230+Math.random()*260);
+}
+document.getElementById('btnThink').onclick=function(){
+  thinking=!thinking; this.classList.toggle('on',thinking);
+  this.textContent = thinking?'⚡ Pensar':'⏸ Pausa';
+  if(thinking) spark();
+};
+spark();
+
+// latido sutil del hub
+const hub=idx['modelo'];
+(function beat(){
+  const k=1+0.05*Math.sin(performance.now()/650);
+  hub._g.querySelector('.core').setAttribute('transform',`scale(${k.toFixed(3)})`);
+  requestAnimationFrame(beat);
+})();
+</script>
+</body>
+</html>

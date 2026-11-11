@@ -9,6 +9,7 @@ Elaborado para **DNED–DIVULAB** (Dirección Nacional de Estrategia Digital · 
 | Archivo | Qué es |
 |---------|--------|
 | `gemelo-digital-gobernanza-ia-unal.html` | **Gemelo digital 3D** interactivo (Three.js) — modelo navegable en 3D. |
+| `cerebro-digital-gobernanza-ia-unal.html` | **Cerebro digital** — red de conocimiento interactiva (SVG + JS, sin dependencias) que conecta todos los conceptos y entregables del repositorio en lóbulos temáticos; nodos clicables, panel de detalle, pan/zoom y pulsos de "pensamiento". |
 | `dashboard-gobernanza-ia-unal.html` | **Dashboard** por secciones (Chart.js) — KPIs, gráficos, tablas, matrices y simulador. |
 | `roadmap-exposicion-30min.html` | **Roadmap/guion de exposición (30 min)** en modo presentador, con cronómetro por bloque. |
 | `roadmap-exposicion-30min.md` | El mismo guion en Markdown (editable, con checklist y preguntas frecuentes). |
@@ -127,6 +128,17 @@ Permite **configurar una iniciativa de IA** (tipo de sistema, origen, datos y al
 - **Resultado** y **regla de decisión** aplicada. Regla jerárquica por protección de derechos: una objeción de **1.3 (Jurídico)** o **1.4 (Socio-Ambiental)** por riesgo a derechos **prevalece** (veto / escalar al CNED); en los demás casos se resuelve por salvaguardas, unanimidad o mayoría.
 - **Mini-diagrama SVG animado:** la operación de la plenaria se muestra como un grafo con la **Plenaria** al centro y los 4 núcleos; una **animación del flujo de trabajo** ilumina paso a paso la radicación, el traslado a trámite, la consulta 1.2↔1.3, el regreso con ponencias y la deliberación, con un pulso que recorre las conexiones y el veredicto final por núcleo. Incluye botón **▶ Reproducir animación**.
 - **Tooltips de interacción:** al pasar el mouse (o tocar) una flecha se muestra el detalle del hand-off. En la flecha bidireccional **1.2 ↔ 1.3** se despliega lo que cada núcleo le pregunta al otro: el Técnico consulta al Jurídico sobre legalidad del tratamiento de datos, licencias y presupuesto; el Jurídico consulta al Técnico sobre ciberseguridad, alojamiento de datos (Habeas Data), consumo energético y RAEE.
+
+## 🧠 Cerebro digital (red de conocimiento)
+
+`cerebro-digital-gobernanza-ia-unal.html` es un **mapa de conocimiento interactivo** de todo lo cargado al repositorio: una red tipo cerebro donde cada **nodo** es un concepto o entregable y cada **sinapsis** representa una relación. Es **100 % autocontenido** (SVG + JavaScript, sin librerías ni CDN: funciona sin conexión).
+
+- **30 nodos** organizados en **6 lóbulos temáticos:** estructura de gobernanza · operación y decisión · riesgo y ética · referencia y benchmarking · mesas de co-creación · entregables del repositorio.
+- **48 sinapsis** que conectan los conceptos (p. ej. Modelo → Mesa Técnica → Plenaria → Quórum; Riesgo ↔ RACI ↔ Taxonomía; Co-creación → las 6 mesas).
+- **Interactividad:** clic en un nodo para resaltar sus conexiones y abrir un **panel de detalle** (descripción, puntos clave y chips navegables a los nodos vecinos); **pan** (arrastrar), **zoom** (rueda) y botón **⟳ Centrar**.
+- **"Pensamiento":** pulsos luminosos recorren las sinapsis y el núcleo late suavemente; se puede pausar con **⚡ Pensar / ⏸ Pausa**.
+- La **leyenda** permite encender/apagar lóbulos para enfocar una región.
+- El nodo **Repositorio GitHub** enlaza al repo del proyecto.
 
 ## 🧊 Gemelo digital 3D
 
