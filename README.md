@@ -129,16 +129,20 @@ Permite **configurar una iniciativa de IA** (tipo de sistema, origen, datos y al
 - **Mini-diagrama SVG animado:** la operación de la plenaria se muestra como un grafo con la **Plenaria** al centro y los 4 núcleos; una **animación del flujo de trabajo** ilumina paso a paso la radicación, el traslado a trámite, la consulta 1.2↔1.3, el regreso con ponencias y la deliberación, con un pulso que recorre las conexiones y el veredicto final por núcleo. Incluye botón **▶ Reproducir animación**.
 - **Tooltips de interacción:** al pasar el mouse (o tocar) una flecha se muestra el detalle del hand-off. En la flecha bidireccional **1.2 ↔ 1.3** se despliega lo que cada núcleo le pregunta al otro: el Técnico consulta al Jurídico sobre legalidad del tratamiento de datos, licencias y presupuesto; el Jurídico consulta al Técnico sobre ciberseguridad, alojamiento de datos (Habeas Data), consumo energético y RAEE.
 
-## 🧠 Cerebro digital (red de conocimiento)
+## 🧠 Cerebro digital (red de conocimiento + modelo multi-agente)
 
-`cerebro-digital-gobernanza-ia-unal.html` es un **mapa de conocimiento interactivo** de todo lo cargado al repositorio: una red tipo cerebro donde cada **nodo** es un concepto o entregable y cada **sinapsis** representa una relación. Es **100 % autocontenido** (SVG + JavaScript, sin librerías ni CDN: funciona sin conexión).
+`cerebro-digital-gobernanza-ia-unal.html` es un **mapa de conocimiento interactivo** que fusiona el modelo de gobernanza de la UNAL con el **modelo multi-agente** del vault `AI-Governance-Brain` (patrón *LLM Wiki* de Karpathy). Es **100 % autocontenido** (SVG + JavaScript puro, sin librerías ni CDN: funciona sin conexión).
 
-- **30 nodos** organizados en **6 lóbulos temáticos:** estructura de gobernanza · operación y decisión · riesgo y ética · referencia y benchmarking · mesas de co-creación · entregables del repositorio.
-- **48 sinapsis** que conectan los conceptos (p. ej. Modelo → Mesa Técnica → Plenaria → Quórum; Riesgo ↔ RACI ↔ Taxonomía; Co-creación → las 6 mesas).
-- **Interactividad:** clic en un nodo para resaltar sus conexiones y abrir un **panel de detalle** (descripción, puntos clave y chips navegables a los nodos vecinos); **pan** (arrastrar), **zoom** (rueda) y botón **⟳ Centrar**.
-- **"Pensamiento":** pulsos luminosos recorren las sinapsis y el núcleo late suavemente; se puede pausar con **⚡ Pensar / ⏸ Pausa**.
-- La **leyenda** permite encender/apagar lóbulos para enfocar una región.
+- **35 nodos** y **65 sinapsis** organizados en **8 lóbulos temáticos:** Agentes · Núcleo de decisión · Estándares y frameworks · Conceptos · Gobernanza UNAL · Mesas de co-creación · Skills · Entregables.
+- **Modelo multi-agente incorporado** (del ZIP): los 4 agentes de valor **Freedom · Equality · Safety · Culture**, el **Protocolo de decisión**, **Escalada y deliberación** y los **umbrales de daño (0–3)**.
+- **Estándares y conceptos:** **AI IAM Standard**, **NIST Mapping**, **Non-Human Identity**, **Least Privilege** y **Runtime Control Plane**.
+- **Skills del vault** como nodos: `deliberate-agents`, `risk-assessment`, `ingest-source`, `generate-report`.
+- **Capas del grafo (Karpathy)** en la leyenda: Core · Estándares · Conceptos · Gobernanza UNAL · Entregables (para aislar niveles), además del encendido/apagado por lóbulo.
+- **⚖ Deliberar:** modal que aplica el *Decision Protocol* — describes un caso y el cerebro activa los 4 agentes, muestra la posición de cada uno, aplica la regla de decisión (intervención fuerte solo si Safety AI + ≥1 agente, o umbral crítico de daño físico) y da un nivel de confianza.
+- **Interactividad:** clic en un nodo resalta conexiones y abre un **panel de detalle** (descripción, cita del agente cuando aplica, puntos clave y *chips* navegables); **pan**, **zoom**, **⟳ Centrar** y **⚡ Pensar / ⏸ Pausa** (pulsos de "pensamiento").
 - El nodo **Repositorio GitHub** enlaza al repo del proyecto.
+
+> El contenido, diseño (capas por color) y funcionalidad (deliberación, skills) provienen de `AI-Governance-Brain.zip`, que también está en el repositorio como vault de Obsidian/Claude.
 
 ## 🧊 Gemelo digital 3D
 
