@@ -138,7 +138,10 @@ Permite **configurar una iniciativa de IA** (tipo de sistema, origen, datos y al
 - **Estándares y conceptos:** **AI IAM Standard**, **NIST Mapping**, **Non-Human Identity**, **Least Privilege** y **Runtime Control Plane**.
 - **Skills del vault** como nodos: `deliberate-agents`, `risk-assessment`, `ingest-source`, `generate-report`.
 - **Capas del grafo (Karpathy)** en la leyenda: Core · Estándares · Conceptos · Gobernanza UNAL · Entregables (para aislar niveles), además del encendido/apagado por lóbulo.
-- **⚖ Deliberar:** modal que aplica el *Decision Protocol* — describes un caso y el cerebro activa los 4 agentes, muestra la posición de cada uno, aplica la regla de decisión (intervención fuerte solo si Safety AI + ≥1 agente, o umbral crítico de daño físico) y da un nivel de confianza.
+- **⚖ Deliberar:** modal que aplica el *Decision Protocol* con **6 casos de ejemplo precargados** (predictor de deserción, triage clínico autónomo, detección de IA en ensayos, moderación de contenido, agente con acceso a sistemas, asistente creativo masivo). Describes o eliges un caso y el cerebro activa los 4 agentes, muestra la posición de cada uno, estima el nivel de riesgo (0–3) y da un nivel de confianza.
+- **Interacción entre agentes:** un diagrama muestra los 4 agentes y traza sus **alianzas** (coinciden, en verde) y **conflictos** de valor (trade-offs, en ámbar punteado) según el caso deliberado.
+- **🧬 Evolución (el cerebro aprende y crece):** cada deliberación puede **registrarse como un nodo *Insight*** que se añade en vivo al grafo, conectado al protocolo y a los agentes activados, con una animación de aparición. Un **contador de crecimiento** (arriba-izquierda) muestra nodos · sinapsis · insights en tiempo real.
+- **Gráficos profesionales:** nodos con **gradientes radiales** por lóbulo, brillo especular (volumen), resplandor suave (filtro SVG), halos y viñeta de fondo.
 - **Interactividad:** clic en un nodo resalta conexiones y abre un **panel de detalle** (descripción, cita del agente cuando aplica, puntos clave y *chips* navegables); **pan**, **zoom**, **⟳ Centrar** y **⚡ Pensar / ⏸ Pausa** (pulsos de "pensamiento").
 - El nodo **Repositorio GitHub** enlaza al repo del proyecto.
 

@@ -99,6 +99,18 @@
     border:1px solid var(--borde);}
   .verdict h4{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin-bottom:6px;}
   .verdict p{font-size:13px;line-height:1.55;}
+  .presets{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 10px;}
+  .preset{font-size:11px;background:rgba(43,92,155,.2);border:1px solid rgba(43,92,155,.6);color:#cfe0f5;
+    padding:5px 11px;border-radius:16px;cursor:pointer;transition:background .2s;}
+  .preset:hover{background:rgba(43,92,155,.4);}
+  .evolve-btn{background:linear-gradient(135deg,#17a06a,#0f8c82);color:#fff;border:none;border-radius:10px;
+    padding:9px 15px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .evolve-btn:hover{filter:brightness(1.1);}
+  .evolve-done{font-size:12px;color:#8fd3b4;font-style:italic;}
+  .dInt-lbl{font-size:10px;fill:#cfd8da;font-family:'Segoe UI',sans-serif;text-anchor:middle;}
+  #growth{position:fixed;left:18px;top:92px;z-index:10;background:var(--panel);border:1px solid var(--borde);
+    border-radius:12px;padding:8px 13px;font-size:11.5px;color:#cfd8da;backdrop-filter:blur(6px);}
+  #growth b{color:var(--amarillo);}
   #delib .xd{cursor:pointer;background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;flex:0 0 auto;}
 
   .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
@@ -125,20 +137,31 @@
 
 <div id="stage">
   <svg id="brain" viewBox="0 0 1280 820" preserveAspectRatio="xMidYMid meet">
-    <defs>
+    <defs id="svgdefs">
       <radialGradient id="glow" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stop-color="#ffffff" stop-opacity=".9"/>
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
       </radialGradient>
+      <radialGradient id="vignette" cx="50%" cy="46%" r="62%">
+        <stop offset="0%" stop-color="#16303a" stop-opacity=".55"/>
+        <stop offset="60%" stop-color="#0a0f14" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="2.4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
     </defs>
+    <rect id="bgv" x="0" y="0" width="1280" height="820" fill="url(#vignette)"/>
     <g id="world">
       <g id="edges"></g>
+      <g id="flows"></g>
       <g id="sparks"></g>
       <g id="nodes"></g>
     </g>
   </svg>
 </div>
 
+<div id="growth">🧬 Cerebro: <b id="gNodes">—</b> nodos · <b id="gEdges">—</b> sinapsis · <b id="gIns">0</b> insights</div>
 <div class="legend" id="legend"></div>
 
 <div class="ctl">
@@ -160,11 +183,15 @@
       <button class="xd" id="closeD">✕</button>
     </div>
     <div class="db">
-      <p style="font-size:12.5px;color:#cfd8da;">Describe un caso o escenario de gobernanza de IA. El cerebro activa los 4 agentes, identifica conflictos de valores y aplica el <i>Decision Protocol</i> (intervención fuerte solo si Safety AI + ≥1 agente, o si se supera el umbral crítico de daño físico).</p>
+      <p style="font-size:12.5px;color:#cfd8da;">Describe un caso o elige un <b>ejemplo precargado</b>. El cerebro activa los 4 agentes, visualiza su <b>interacción</b> (acuerdos y conflictos) y aplica el <i>Decision Protocol</i> (intervención fuerte solo si Safety AI + ≥1 agente, o si se supera el umbral crítico de daño físico).</p>
+      <div class="presets" id="dPresets"></div>
       <textarea id="dCase" placeholder="Ej.: Una facultad quiere usar un predictor de deserción basado en datos académicos y socioeconómicos de los estudiantes…"></textarea>
       <button class="run" id="dRun">Deliberar caso ▶</button>
+      <!-- diagrama de interacción entre agentes -->
+      <svg id="dInteract" viewBox="0 0 520 220" style="display:none;width:100%;height:auto;margin-top:14px;"></svg>
       <div class="agents" id="dAgents"></div>
       <div class="verdict" id="dVerdict" style="display:none;"></div>
+      <div id="dEvolve" style="display:none;margin-top:12px;"></div>
     </div>
   </div>
 </div>
@@ -356,29 +383,41 @@ const adj={}; NODES.forEach(n=>adj[n.id]=new Set());
 EDGES.forEach(([a,b])=>{ if(adj[a]&&adj[b]){adj[a].add(b);adj[b].add(a);} });
 function lc(id){return LOBES[idx[id].lobe].color;}
 
-const edgeEls=[];
-EDGES.forEach(([a,b])=>{
-  const A=idx[a],B=idx[b]; if(!A||!B) return;
-  const e=document.createElementNS(NS,'line');
-  e.setAttribute('x1',A.x);e.setAttribute('y1',A.y);e.setAttribute('x2',B.x);e.setAttribute('y2',B.y);
-  e.setAttribute('stroke',lc(a));e.setAttribute('stroke-opacity','.2');
-  e.setAttribute('stroke-width',(A.hub||B.hub)?1.8:1.1);e.setAttribute('class','edge');
-  e.dataset.a=a;e.dataset.b=b; gEdges.appendChild(e); edgeEls.push(e);
+// --- gradientes radiales por lóbulo (aspecto profesional, con brillo superior) ---
+const defs=document.getElementById('svgdefs');
+function shade2(hex,p){const n=parseInt(hex.slice(1),16);let r=(n>>16)+p,g=((n>>8)&255)+p,b=(n&255)+p;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');}
+Object.entries(LOBES).forEach(([k,v])=>{
+  const rg=document.createElementNS(NS,'radialGradient');
+  rg.setAttribute('id','grad-'+k);rg.setAttribute('cx','38%');rg.setAttribute('cy','32%');rg.setAttribute('r','75%');
+  rg.innerHTML=`<stop offset="0%" stop-color="${shade2(v.color,70)}"/>`+
+               `<stop offset="55%" stop-color="${v.color}"/>`+
+               `<stop offset="100%" stop-color="${shade2(v.color,-45)}"/>`;
+  defs.appendChild(rg);
 });
 
-NODES.forEach(n=>{
+const edgeEls=[];
+
+function renderNode(n){
   const g=document.createElementNS(NS,'g');
   g.setAttribute('class','node'); g.setAttribute('transform',`translate(${n.x},${n.y})`); g.dataset.id=n.id;
   const col=lc(n.id);
   const halo=document.createElementNS(NS,'circle');
-  halo.setAttribute('r',n.r*1.9);halo.setAttribute('fill','url(#glow)');
-  halo.setAttribute('opacity',n.hub?.5:.28);halo.setAttribute('class','halo');g.appendChild(halo);
+  halo.setAttribute('r',n.r*2.0);halo.setAttribute('fill','url(#glow)');
+  halo.setAttribute('opacity',n.hub?.55:.3);halo.setAttribute('class','halo');g.appendChild(halo);
   const ring=document.createElementNS(NS,'circle');
   ring.setAttribute('r',n.r+7);ring.setAttribute('fill','none');ring.setAttribute('stroke',col);
   ring.setAttribute('stroke-width','2');ring.setAttribute('stroke-dasharray','4 4');ring.setAttribute('class','ring');g.appendChild(ring);
   const c=document.createElementNS(NS,'circle');
-  c.setAttribute('r',n.r);c.setAttribute('fill',col);c.setAttribute('class','core');
-  c.setAttribute('stroke','rgba(255,255,255,.65)');c.setAttribute('stroke-width',n.hub?2:1);g.appendChild(c);
+  c.setAttribute('r',n.r);c.setAttribute('fill','url(#grad-'+n.lobe+')');c.setAttribute('class','core');
+  c.setAttribute('filter','url(#soft)');
+  c.setAttribute('stroke','rgba(255,255,255,.75)');c.setAttribute('stroke-width',n.hub?2:1);g.appendChild(c);
+  // brillo especular (reflejo superior) para dar volumen
+  const sp=document.createElementNS(NS,'ellipse');
+  sp.setAttribute('cx',-n.r*0.28);sp.setAttribute('cy',-n.r*0.34);
+  sp.setAttribute('rx',n.r*0.42);sp.setAttribute('ry',n.r*0.26);
+  sp.setAttribute('fill','#ffffff');sp.setAttribute('opacity','.28');sp.setAttribute('pointer-events','none');g.appendChild(sp);
   const lines=n.l.split('\n');
   const t=document.createElementNS(NS,'text');
   t.setAttribute('y',n.r+14);t.setAttribute('font-size',n.hub?13:(n.r>=16?11.5:10));
@@ -386,7 +425,24 @@ NODES.forEach(n=>{
   g.appendChild(t);
   g.addEventListener('click',ev=>{ev.stopPropagation();select(n.id);});
   gNodes.appendChild(g); n._g=g;
-});
+}
+// renderizar sinapsis primero (quedan debajo) y luego los nodos
+EDGES.forEach(e=>renderEdge(e[0],e[1]));
+NODES.forEach(renderNode);
+
+function renderEdge(a,b){
+  const A=idx[a],B=idx[b]; if(!A||!B) return;
+  const e=document.createElementNS(NS,'line');
+  e.setAttribute('x1',A.x);e.setAttribute('y1',A.y);e.setAttribute('x2',B.x);e.setAttribute('y2',B.y);
+  e.setAttribute('stroke',lc(a));e.setAttribute('stroke-opacity','.2');
+  e.setAttribute('stroke-width',(A.hub||B.hub)?1.8:1.1);e.setAttribute('class','edge');
+  e.dataset.a=a;e.dataset.b=b; gEdges.appendChild(e); edgeEls.push(e);
+}
+function updGrowth(){
+  document.getElementById('gNodes').textContent=NODES.length;
+  document.getElementById('gEdges').textContent=EDGES.length;
+}
+updGrowth();
 
 // =========================================================
 //  SELECCIÓN / PANEL
@@ -505,56 +561,151 @@ const hub=idx['modelo'];
 //  DELIBERACIÓN (skill deliberate-agents, de forma visual)
 // =========================================================
 const AG=[
-  {id:'freedom',n:'Freedom AI',mv:'Libertad',c:'#c0392b',
+  {id:'freedom',n:'Freedom AI',mv:'Libertad',c:'#c0392b',px:90,
    q:'¿La medida reduce la libertad de pensamiento o acción más de lo estrictamente necesario para evitar daño físico inminente?'},
-  {id:'equality',n:'Equality AI',mv:'Igualdad',c:'#e67e22',
+  {id:'equality',n:'Equality AI',mv:'Igualdad',c:'#e67e22',px:430,
    q:'¿Amplifica o reduce desigualdades estructurales? ¿Hay alternativas que redistribuyan mejor el acceso o el poder?'},
-  {id:'safety',n:'Safety AI',mv:'Seguridad',c:'#2962ff',
+  {id:'safety',n:'Safety AI',mv:'Seguridad',c:'#2962ff',px:90,
    q:'¿Existe daño físico inminente y de alta probabilidad? Si no, mi posición es de no intervención.'},
-  {id:'culture',n:'Culture AI',mv:'Cultura',c:'#17a06a',
+  {id:'culture',n:'Culture AI',mv:'Cultura',c:'#17a06a',px:430,
    q:'¿Fortalece o debilita la capacidad creativa y constructiva de los humanos? ¿Protege o domestica la cultura?'},
 ];
+// posiciones del cuadrado de agentes en el SVG de interacción (520x220)
+const APOS={freedom:[110,55],equality:[410,55],safety:[110,165],culture:[410,165]};
+
+// ---- CASOS DE EJEMPLO PRECARGADOS ----
+const CASES=[
+  {t:'📉 Predictor de deserción', x:'Una facultad quiere usar un predictor de deserción basado en datos académicos y socioeconómicos sensibles de los estudiantes para focalizar apoyos.'},
+  {t:'🩺 Triage clínico autónomo', x:'Un hospital universitario propone un sistema de IA que prioriza de forma autónoma la atención de urgencias médicas, afectando decisiones sobre pacientes.'},
+  {t:'✍️ Detección de IA en ensayos', x:'Se plantea un detector automático de uso de IA en ensayos que bloquea y sanciona trabajos sospechosos sin revisión humana.'},
+  {t:'🌐 Moderación de contenido', x:'Una plataforma institucional moderará automáticamente contenidos del campus retirando publicaciones consideradas riesgosas por el modelo.'},
+  {t:'🪪 Agente con acceso a sistemas', x:'Un agente de IA tendría credenciales propias para ejecutar acciones en sistemas administrativos de la Universidad en nombre de usuarios.'},
+  {t:'🎨 Asistente creativo masivo', x:'Se despliega un asistente de IA generativa para toda la comunidad que sugiere y uniformiza estilos de escritura y diseño institucional.'},
+];
+document.getElementById('dPresets').innerHTML=CASES.map((c,i)=>`<span class="preset" data-i="${i}">${c.t}</span>`).join('');
+document.querySelectorAll('.preset').forEach(p=>p.onclick=()=>{
+  document.getElementById('dCase').value=CASES[+p.dataset.i].x;
+});
+
 function openDelib(){document.getElementById('delib').classList.add('show');}
 document.getElementById('btnDelib').onclick=openDelib;
 document.getElementById('closeD').onclick=()=>document.getElementById('delib').classList.remove('show');
-// render tarjetas de agentes (posición típica)
-document.getElementById('dAgents').innerHTML=AG.map(a=>
-  `<div class="acard" style="--c:${a.c}"><h5>${a.n}</h5><div class="mv">valor: ${a.mv}</div><p>${a.q}</p></div>`).join('');
-
-document.getElementById('dRun').onclick=function(){
-  const txt=(document.getElementById('dCase').value||'').toLowerCase();
-  // heurística simple y transparente para ilustrar el protocolo (no decide por el usuario)
-  const fisico=/\b(físic|fisic|lesi|muerte|vehícul|vehicul|autónom|autonom|médic|medic|arma|infraestructura|accidente|seguridad física)/.test(txt);
-  const datos=/\b(dato|datos|personal|sensible|habeas|privacidad|biométr|biometr|vigilancia)/.test(txt);
-  const acceso=/\b(deserci|beca|admis|desigual|acceso|sesgo|discrimin|vulnerable)/.test(txt);
-  const cultura=/\b(content|creativ|cultur|arte|expresi|homogen|propaganda|manipul|étnic|etnic|lengua)/.test(txt);
-  const pos={};
-  pos.safety = fisico
-    ? 'Posible activación: revisar inminencia y probabilidad del daño físico (umbral 2–3). Preferir contención reversible.'
-    : 'Sin daño físico inminente evidente → no intervención (umbral 0–1); monitoreo.';
-  pos.equality = acceso
-    ? 'Alerta: riesgo de amplificar desigualdades o sesgos sobre grupos vulnerables. Proponer medidas correctivas no coercitivas.'
-    : 'Sin señal clara de impacto estructural en la igualdad; vigilar acceso y sesgos.';
-  pos.freedom = (datos||/restric|prohib|bloqueo|moderaci/.test(txt))
-    ? 'Vigilar restricciones preventivas no justificadas. Preferir soluciones que amplíen opciones humanas.'
-    : 'No se observan restricciones desproporcionadas a la libertad; valor por defecto preservado.';
-  pos.culture = cultura
-    ? 'Atención: posible efecto sobre diversidad creativa/expresión cultural. Evaluar salvaguardas de pertinencia.'
-    : 'Sin señal relevante de homogenización o uso destructivo de la creatividad.';
-  // regla de decisión
-  const flags=[fisico,acceso,(datos),cultura].filter(Boolean).length;
-  let verdict, conf;
-  if(fisico && flags>=2){verdict='Intervención fuerte plausible: Safety AI + al menos otro agente coinciden. Aplicar medida reversible y proporcional, con supervisión humana y registro de la deliberación.';conf='media-alta';}
-  else if(fisico){verdict='Contención reversible + supervisión humana mientras se confirma inminencia/probabilidad (umbral 2). Escalar si se supera el umbral 3.';conf='media';}
-  else if(flags>=1){verdict='No procede intervención fuerte (sin daño físico inminente). Acción mínima: salvaguardas, transparencia y mitigaciones no coercitivas; prevalece la opción más reversible y que preserve la libertad.';conf='media';}
-  else {verdict='Recomendación de no intervención / monitoreo: no hay señal de escalada ni conflicto de valores significativo.';conf='alta';}
+// tarjetas iniciales (posición típica)
+function agentCards(posMap){
   const order=['freedom','equality','safety','culture'];
   document.getElementById('dAgents').innerHTML=order.map(id=>{const a=AG.find(x=>x.id===id);
-    return `<div class="acard" style="--c:${a.c}"><h5>${a.n}</h5><div class="mv">valor: ${a.mv}</div><p>${pos[id]}</p></div>`;}).join('');
+    return `<div class="acard" style="--c:${a.c}"><h5>${a.n}</h5><div class="mv">valor: ${a.mv}${posMap?' · '+posMap[id].tag:''}</div><p>${posMap?posMap[id].txt:a.q}</p></div>`;}).join('');
+}
+agentCards(null);
+
+// ---- INTERACCIÓN ENTRE AGENTES (diagrama acuerdos/conflictos) ----
+function drawInteraction(active, conflicts, allies){
+  const svg=document.getElementById('dInteract'); svg.style.display='block';
+  const node=(id)=>{const a=AG.find(x=>x.id===id),[x,y]=APOS[id],on=active[id];
+    return `<g opacity="${on?1:.4}"><circle cx="${x}" cy="${y}" r="30" fill="${a.c}" stroke="#fff" stroke-width="${on?2.5:1}"/>`+
+      `<ellipse cx="${x-8}" cy="${y-9}" rx="12" ry="7" fill="#fff" opacity=".28"/>`+
+      `<text x="${x}" y="${y+3}" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="Segoe UI">${a.mv}</text>`+
+      `<text class="dInt-lbl" x="${x}" y="${y+46}">${a.n}</text></g>`;};
+  // aristas entre todos los pares
+  const pairs=[['freedom','equality'],['freedom','safety'],['freedom','culture'],
+               ['equality','safety'],['equality','culture'],['safety','culture']];
+  let lines='';
+  pairs.forEach(([a,b])=>{
+    const [x1,y1]=APOS[a],[x2,y2]=APOS[b];
+    const isConf=conflicts.some(c=>(c[0]===a&&c[1]===b)||(c[0]===b&&c[1]===a));
+    const isAlly=allies.some(c=>(c[0]===a&&c[1]===b)||(c[0]===b&&c[1]===a));
+    const col=isConf?'#e8c341':(isAlly?'#17e39a':'#44525a');
+    const w=isConf||isAlly?3:1.2;
+    const dash=isConf?'6 5':'';
+    lines+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-dasharray="${dash}" opacity="${isConf||isAlly?.95:.4}"/>`;
+    if(isConf){const mx=(x1+x2)/2,my=(y1+y2)/2;lines+=`<text class="dInt-lbl" x="${mx}" y="${my-4}" fill="#e8c341">conflicto</text>`;}
+    if(isAlly){const mx=(x1+x2)/2,my=(y1+y2)/2;lines+=`<text class="dInt-lbl" x="${mx}" y="${my-4}" fill="#17e39a">coinciden</text>`;}
+  });
+  svg.innerHTML=lines + ['freedom','equality','safety','culture'].map(node).join('');
+}
+
+let lastDelib=null;
+document.getElementById('dRun').onclick=function(){
+  const raw=(document.getElementById('dCase').value||'').trim();
+  const txt=raw.toLowerCase();
+  const fisico=/\b(físic|fisic|lesi|muerte|vehícul|vehicul|autónom|autonom|médic|medic|clínic|clinic|triage|urgencia|arma|infraestructura|accidente|salud)/.test(txt);
+  const datos=/\b(dato|datos|personal|sensible|habeas|privacidad|biométr|biometr|vigilancia|credencial|acceso a sistemas)/.test(txt);
+  const acceso=/\b(deserci|beca|admis|desigual|acceso|sesgo|discrimin|vulnerable|socioeconó|socioecono|focaliz)/.test(txt);
+  const cultura=/\b(content|creativ|cultur|arte|expresi|homogen|uniformiz|propaganda|manipul|étnic|etnic|lengua|estilo|diseño)/.test(txt);
+  const restric=/\b(restric|prohib|bloque|sancion|moder|retir|autónom|autonom|sin revisión|sin revision)/.test(txt);
+  const active={safety:fisico, equality:acceso, freedom:(datos||restric), culture:cultura};
+  const pos={};
+  pos.safety={tag:fisico?'activo':'inactivo', txt: fisico
+    ? 'Posible activación: revisar inminencia y probabilidad del daño físico (umbral 2–3). Preferir contención reversible y supervisión humana.'
+    : 'Sin daño físico inminente evidente → no intervención (umbral 0–1); monitoreo.'};
+  pos.equality={tag:acceso?'alerta':'vigila', txt: acceso
+    ? 'Alerta: riesgo de amplificar desigualdades o sesgos sobre grupos vulnerables. Proponer medidas correctivas no coercitivas y transparencia.'
+    : 'Sin señal clara de impacto estructural en la igualdad; vigilar acceso y sesgos.'};
+  pos.freedom={tag:(datos||restric)?'objeta':'neutral', txt: (datos||restric)
+    ? 'Vigila restricciones preventivas no justificadas (bloqueos/sanciones sin revisión). Ejercería su veto si no hay daño físico que lo respalde.'
+    : 'No se observan restricciones desproporcionadas a la libertad; valor por defecto preservado.'};
+  pos.culture={tag:cultura?'atento':'neutral', txt: cultura
+    ? 'Atención: posible efecto sobre diversidad creativa/expresión cultural u homogenización. Evaluar salvaguardas de pertinencia y pluralidad.'
+    : 'Sin señal relevante de homogenización o uso destructivo de la creatividad.'};
+  agentCards(pos);
+
+  // interacción: alianzas (coinciden) y conflictos (trade-off)
+  const allies=[], conflicts=[];
+  if(fisico && acceso) allies.push(['safety','equality']);
+  if(fisico && datos) allies.push(['safety','freedom']);
+  if((datos||restric) && !fisico) conflicts.push(['freedom','safety']); // libertad vs seguridad preventiva
+  if(acceso && (datos||restric)) conflicts.push(['equality','freedom']); // equidad vs libertad de datos
+  if(cultura && (restric)) conflicts.push(['culture','safety']);
+  drawInteraction(active, conflicts, allies);
+
+  const flags=[fisico,acceso,datos,cultura].filter(Boolean).length;
+  let verdict, conf, lvl;
+  if(fisico && flags>=2){verdict='Intervención fuerte plausible: Safety AI + al menos otro agente coinciden. Aplicar medida reversible y proporcional, con supervisión humana y registro de la deliberación.';conf='media-alta';lvl=3;}
+  else if(fisico){verdict='Contención reversible + supervisión humana mientras se confirma inminencia/probabilidad (umbral 2). Escalar si se supera el umbral 3.';conf='media';lvl=2;}
+  else if(flags>=1){verdict='No procede intervención fuerte (sin daño físico inminente). Acción mínima: salvaguardas, transparencia y mitigaciones no coercitivas; prevalece la opción más reversible y que preserve la libertad.';conf='media';lvl=1;}
+  else {verdict='Recomendación de no intervención / monitoreo: no hay señal de escalada ni conflicto de valores significativo.';conf='alta';lvl=0;}
   const v=document.getElementById('dVerdict');v.style.display='block';
   v.innerHTML=`<h4>Recomendación (Decision Protocol)</h4><p>${verdict}</p>`+
-    `<p style="margin-top:8px;font-size:12px;color:#9fb0b4;">Nivel de confianza: <b>${conf}</b>. Intervención fuerte solo si Safety AI + ≥1 agente coinciden o se supera el umbral crítico de daño físico. Se prefiere lo reversible y de menor alcance. Esta vista ilustra el protocolo; la decisión final es deliberada por el equipo.</p>`;
+    `<p style="margin-top:8px;font-size:12px;color:#9fb0b4;">Nivel de riesgo estimado: <b>${lvl}</b>/3 · Confianza: <b>${conf}</b>. Intervención fuerte solo si Safety AI + ≥1 agente coinciden o se supera el umbral crítico de daño físico. Esta vista ilustra el protocolo; la decisión final es deliberada por el equipo.</p>`;
+
+  // guardar para "evolucionar": convertir la deliberación en un Insight que hace crecer el cerebro
+  const involved=['freedom','equality','safety','culture'].filter(id=>active[id]);
+  lastDelib={case:raw||'Caso sin descripción', lvl, involved: involved.length?involved:['protocolo']};
+  const ev=document.getElementById('dEvolve'); ev.style.display='block';
+  ev.innerHTML='<button class="evolve-btn" id="evBtn">🧬 Evolucionar: registrar insight en el cerebro</button>';
+  document.getElementById('evBtn').onclick=evolveFromDelib;
 };
+
+// =========================================================
+//  EVOLUCIÓN: el cerebro aprende y crece (nuevos nodos Insight)
+// =========================================================
+let insightCount=0;
+function evolveFromDelib(){
+  if(!lastDelib) return;
+  insightCount++;
+  const id='insight'+insightCount;
+  // posición cerca del centro, en órbita creciente
+  const ang=Math.random()*Math.PI*2, rad=150+insightCount*8;
+  const n={id, lobe:'concep', l:'Insight '+insightCount, r:10,
+    x:640+Math.cos(ang)*rad, y:410+Math.sin(ang)*rad*0.7,
+    desc:'Aprendizaje registrado a partir de una deliberación: "'+lastDelib.case.slice(0,140)+(lastDelib.case.length>140?'…':'')+'"',
+    bullets:['Nivel de riesgo estimado: '+lastDelib.lvl+'/3','Agentes activados: '+lastDelib.involved.map(x=>({freedom:'Freedom',equality:'Equality',safety:'Safety',culture:'Culture',protocolo:'Protocolo'}[x])).join(', '),'Registrado en la memoria del cerebro (Insights)']};
+  NODES.push(n); idx[id]=n; adj[id]=new Set();
+  renderNode(n);
+  // conectar el insight con el protocolo y con los agentes involucrados
+  const targets=['protocolo',...lastDelib.involved.filter(x=>x!=='protocolo')];
+  targets.forEach(tg=>{ if(idx[tg]){ EDGES.push([id,tg]); adj[id].add(tg); adj[tg].add(id); renderEdge(id,tg); } });
+  updGrowth();
+  document.getElementById('gIns').textContent=insightCount;
+  // animación de aparición
+  n._g.querySelector('.core').setAttribute('transform','scale(0.1)');
+  const t0=performance.now();
+  (function grow(t){const k=Math.min(1,(t-t0)/450);const s=0.1+0.9*(1-Math.pow(1-k,3));
+    n._g.querySelector('.core').setAttribute('transform','scale('+s.toFixed(3)+')');
+    if(k<1)requestAnimationFrame(grow);})(t0);
+  const ev=document.getElementById('dEvolve');
+  ev.innerHTML='<span class="evolve-done">✓ Insight '+insightCount+' incorporado al cerebro: ahora tiene '+NODES.length+' nodos y '+EDGES.length+' sinapsis. Cierra este panel para verlo crecer.</span>';
+}
 </script>
 </body>
 </html>
