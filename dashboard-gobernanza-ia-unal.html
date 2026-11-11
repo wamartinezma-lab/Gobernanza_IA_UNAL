@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard · Gobernanza de la IA en la UNAL — Mesa Técnica de IA</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --verde:#1f4037; --verde-prof:#132a24; --verde-crema:#f4f6f3;
+    --dorado:#b89347; --naranja:#e8933f; --cned:#0e2340; --mesa:#0f8c82;
+    --azul:#2962ff; --teal:#13837a; --control:#e8591c; --socio:#17a06a; --purpura:#6b4fa0;
+    --rojo:#c0392b; --amarillo:#e8933f; --verde-ok:#17a06a; --gris:#7a7f88;
+    --txt:#1d2b26; --txt2:#55615b; --borde:#e2e7e3; --bg:#eef1ed; --card:#ffffff;
+    --sombra:0 2px 10px rgba(20,40,34,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;}
+  a{color:inherit;}
+
+  /* ---------- Layout ---------- */
+  .app{display:flex;min-height:100vh;}
+  aside{
+    width:250px;flex:0 0 250px;background:var(--verde-prof);color:#fff;
+    position:sticky;top:0;height:100vh;overflow-y:auto;padding:0 0 20px;
+  }
+  aside .brand{padding:20px 20px 16px;border-bottom:3px solid var(--dorado);display:flex;gap:12px;align-items:center;}
+  aside .brand .crest{width:40px;height:40px;border:1.5px solid var(--dorado);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--dorado);font-size:11px;}
+  aside .brand h1{font-size:14px;line-height:1.25;}
+  aside .brand span{display:block;font-size:10.5px;opacity:.7;font-weight:400;margin-top:3px;}
+  nav{padding:14px 10px;}
+  nav button{
+    width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;color:#cfd8d3;
+    padding:11px 14px;border-radius:9px;cursor:pointer;font-size:13.5px;text-align:left;transition:.18s;margin-bottom:3px;
+  }
+  nav button .ic{width:20px;text-align:center;font-size:15px;}
+  nav button:hover{background:rgba(255,255,255,.07);color:#fff;}
+  nav button.active{background:var(--dorado);color:var(--verde-prof);font-weight:600;}
+  aside .foot{padding:16px 20px;font-size:11px;opacity:.6;border-top:1px solid rgba(255,255,255,.1);margin-top:10px;}
+
+  main{flex:1;min-width:0;}
+  .topbar{background:var(--card);border-bottom:1px solid var(--borde);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;}
+  .topbar h2{font-size:19px;}
+  .topbar .sub{font-size:12.5px;color:var(--txt2);}
+  .topbar .pill{background:var(--verde-crema);border:1px solid var(--borde);border-radius:20px;padding:5px 13px;font-size:12px;color:var(--verde);font-weight:600;}
+  .content{padding:24px 28px 60px;}
+  section.view{display:none;animation:fade .3s ease;}
+  section.view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .view > h3.secttl{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dorado);margin:26px 0 12px;}
+  .view > h3.secttl:first-child{margin-top:0;}
+
+  /* ---------- KPI cards ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;}
+  .kpi{background:var(--card);border-radius:14px;padding:18px;box-shadow:var(--sombra);border-left:5px solid var(--dorado);}
+  .kpi .n{font-size:34px;font-weight:800;line-height:1;}
+  .kpi .l{font-size:12.5px;color:var(--txt2);margin-top:7px;}
+  .kpi .d{font-size:11px;margin-top:8px;font-weight:600;}
+  .kpi.ok{border-left-color:var(--verde-ok);} .kpi.ok .n{color:var(--verde-ok);}
+  .kpi.warn{border-left-color:var(--naranja);} .kpi.warn .n{color:var(--control);}
+  .kpi.blue{border-left-color:var(--azul);} .kpi.blue .n{color:var(--azul);}
+  .kpi.teal{border-left-color:var(--mesa);} .kpi.teal .n{color:var(--mesa);}
+  .kpi.pur{border-left-color:var(--purpura);} .kpi.pur .n{color:var(--purpura);}
+
+  /* ---------- Grid / cards ---------- */
+  .grid{display:grid;gap:18px;}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+  .g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+  .card{background:var(--card);border-radius:14px;padding:18px 20px;box-shadow:var(--sombra);}
+  .card h4{font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:9px;}
+  .card .tag{font-size:11px;color:var(--txt2);font-style:italic;}
+  .card ul{list-style:none;margin-top:10px;}
+  .card li{font-size:13px;padding-left:16px;position:relative;margin-bottom:5px;}
+  .card li::before{content:"▸";position:absolute;left:0;color:var(--dorado);}
+  .card .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:12px;color:#fff;margin-left:auto;}
+  .accent{height:5px;border-radius:5px 5px 0 0;margin:-18px -20px 14px;}
+
+  .chart-wrap{position:relative;height:260px;}
+  .chart-wrap.sm{height:220px;}
+
+  /* ---------- Tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--borde);vertical-align:middle;}
+  th{background:var(--verde-prof);color:#fff;font-size:11px;letter-spacing:.5px;text-transform:uppercase;position:sticky;top:0;}
+  tbody tr:hover{background:var(--verde-crema);}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;}
+  .st{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;}
+  .st.e{background:#dff3e8;color:#157a4a;} .st.p{background:#fde7d6;color:#c0531a;}
+  .pill2{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:12px;color:#fff;}
+  .r-R{background:#2962ff}.r-A{background:#c0392b}.r-C{background:#13837a}.r-I{background:#7a7f88}.r-S{background:#e8591c}
+
+  /* ---------- Risk bars ---------- */
+  .risk{display:flex;flex-direction:column;gap:9px;}
+  .risk .row{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;}
+  .risk .bar{height:38px;border-radius:8px;display:flex;align-items:center;padding:0 14px;color:#fff;font-weight:600;font-size:12.5px;}
+
+  .note{font-size:12px;color:var(--txt2);font-style:italic;border-left:3px solid var(--dorado);padding-left:11px;margin-top:14px;line-height:1.5;}
+  /* mesas de co-creación — flujo de 4 sesiones */
+  .cocre-flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:14px 0 4px;}
+  .cocre-step{flex:1;min-width:150px;background:var(--card);border-radius:12px;box-shadow:var(--sombra);padding:12px 12px 14px;border-top:5px solid var(--c);}
+  .cocre-step .cs-n{display:inline-block;font-size:12px;font-weight:800;color:#fff;background:var(--c);border-radius:8px;padding:2px 10px;margin-bottom:6px;}
+  .cocre-step .cs-t{font-size:13px;font-weight:700;color:var(--verde);margin-bottom:3px;}
+  .cocre-step .cs-v{font-size:11.5px;color:var(--txt2);line-height:1.45;}
+  .cocre-ar{display:flex;align-items:center;font-size:20px;color:var(--dorado);font-weight:700;}
+  .cocre-ver{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+  .cocre-ver .cv{color:#fff;font-size:11.5px;font-weight:700;padding:3px 12px;border-radius:14px;}
+  @media(max-width:760px){.cocre-ar{display:none;}}
+  .legend-inline{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;margin-bottom:12px;}
+  .legend-inline span{display:inline-flex;align-items:center;gap:6px;}
+
+  .flow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;}
+  .flow .step{flex:1;min-width:150px;background:var(--card);border-radius:12px;box-shadow:var(--sombra);padding:14px;border-top:5px solid var(--dorado);position:relative;}
+  .flow .step .ph{font-size:26px;font-weight:800;color:var(--dorado);opacity:.5;}
+  .flow .step h5{font-size:13.5px;margin:4px 0;}
+  .flow .step .dt{font-size:11px;color:var(--txt2);}
+  .flow .step ul{list-style:none;margin-top:8px;}
+  .flow .step li{font-size:11.5px;padding-left:12px;position:relative;margin-bottom:3px;}
+  .flow .step li::before{content:"·";position:absolute;left:3px;color:var(--dorado);font-weight:700;}
+
+  /* ---------- Simulador ---------- */
+  .sim-grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
+  @media(max-width:980px){.sim-grid{grid-template-columns:1fr;}}
+  .sim-form label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin:12px 0 5px;}
+  .sim-form select,.sim-form input{width:100%;padding:9px 11px;border:1px solid var(--borde);border-radius:9px;font-size:13px;background:var(--verde-crema);color:var(--txt);}
+  .sim-form .btnrow{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
+  .sim-btn{flex:1;min-width:120px;border:none;border-radius:10px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.18s;}
+  .sim-btn.primary{background:var(--mesa);color:#fff;} .sim-btn.primary:hover{background:#0b6f67;}
+  .sim-btn.ghost{background:var(--verde-crema);color:var(--verde);border:1px solid var(--borde);} .sim-btn.ghost:hover{background:#e5ebe6;}
+  .sim-btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .riskbadge{display:inline-block;font-size:12px;font-weight:800;padding:5px 14px;border-radius:20px;color:#fff;}
+  .rb-bajo{background:#17a06a}.rb-medio{background:#e8933f;color:#2a1a00}.rb-alto{background:#c0392b}.rb-inaceptable{background:#7a1414}
+
+  /* Pipeline de etapas */
+  .pipeline{display:flex;flex-direction:column;gap:0;}
+  .stage{display:flex;gap:14px;position:relative;padding-bottom:18px;}
+  .stage:not(:last-child)::after{content:"";position:absolute;left:19px;top:40px;bottom:-2px;width:2px;background:var(--borde);}
+  .stage.done:not(:last-child)::after{background:var(--mesa);}
+  .stage .ball{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:#dfe5e1;color:#8a938d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;transition:.3s;z-index:1;border:3px solid var(--card);}
+  .stage.active .ball{background:var(--dorado);color:#fff;transform:scale(1.12);box-shadow:0 0 0 5px rgba(184,147,71,.2);}
+  .stage.done .ball{background:var(--mesa);color:#fff;}
+  .stage .body{flex:1;background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:13px 15px;box-shadow:var(--sombra);opacity:.5;transition:.3s;}
+  .stage.active .body,.stage.done .body{opacity:1;}
+  .stage.active .body{border-color:var(--dorado);}
+  .stage .body h5{font-size:14px;margin-bottom:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .stage .actor{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:12px;color:#fff;}
+  .stage .body p{font-size:12.5px;color:var(--txt2);margin-top:5px;line-height:1.5;}
+  .stage .raci-mini{margin-top:8px;display:flex;gap:7px;flex-wrap:wrap;font-size:11px;}
+  .stage .raci-mini span{display:inline-flex;align-items:center;gap:4px;}
+
+  .verdict{border-radius:14px;padding:18px 20px;color:#fff;margin-top:4px;}
+  .verdict h4{font-size:17px;margin-bottom:5px;}
+  .verdict p{font-size:13px;opacity:.95;}
+  .v-ok{background:linear-gradient(135deg,#17a06a,#0f7d50);}
+  .v-cond{background:linear-gradient(135deg,#e8933f,#cf7318);}
+  .v-escala{background:linear-gradient(135deg,#2962ff,#1842c9);}
+  .v-veto{background:linear-gradient(135deg,#c0392b,#7a1414);}
+  .trace{font-size:12px;color:var(--txt2);margin-top:12px;}
+  .trace b{color:var(--txt);}
+  .scenarios{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .scenarios button{font-size:11.5px;padding:6px 11px;border:1px dashed var(--dorado);background:transparent;color:var(--verde);border-radius:16px;cursor:pointer;}
+  .scenarios button:hover{background:var(--verde-crema);}
+
+  /* ---------- Sub-flujo interno de los 4 núcleos ---------- */
+  .nuclei-box{margin-top:12px;border:1px dashed var(--mesa);border-radius:11px;padding:12px;background:rgba(15,140,130,.05);}
+  .nuclei-box .nb-title{font-size:11.5px;font-weight:700;color:var(--mesa);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .nuclei-box .nb-sub{font-size:11px;color:var(--txt2);margin-bottom:11px;}
+  .nuclei-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+  @media(max-width:620px){.nuclei-grid{grid-template-columns:1fr;}}
+  .nuc{border-radius:10px;background:var(--card);border:1px solid var(--borde);border-left:4px solid var(--mesa);padding:9px 11px;position:relative;opacity:0;transform:translateY(6px);transition:.35s;}
+  .nuc.show{opacity:1;transform:none;}
+  .nuc .seq{position:absolute;top:8px;right:10px;font-size:10px;font-weight:800;color:#c5ccc8;}
+  .nuc h6{font-size:12.5px;margin-bottom:2px;}
+  .nuc .role{font-size:10.5px;color:var(--txt2);}
+  .nuc .verd{display:inline-block;margin-top:7px;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:12px;color:#fff;}
+  .vd-fav{background:#17a06a}.vd-cond{background:#e8933f;color:#2a1a00}.vd-obj{background:#c0392b}
+  .nuclei-flow{font-size:11px;color:var(--txt2);margin-top:11px;line-height:1.6;}
+  .nuclei-flow .ar{color:var(--mesa);font-weight:700;}
+  .nuclei-dictamen{margin-top:11px;padding:9px 12px;border-radius:9px;background:var(--verde-prof);color:#fff;font-size:12px;}
+  .nuclei-dictamen b{color:var(--dorado);}
+
+  /* Quórum y votación */
+  .vote-box{margin-top:11px;background:var(--card);border:1px solid var(--borde);border-radius:11px;padding:11px 13px;}
+  .vote-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;}
+  .vote-title{font-size:12.5px;font-weight:700;color:var(--verde);}
+  .quorum{font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;}
+  .quorum.q-ok{background:#dff3e8;color:#157a4a;}
+  .quorum.q-bad{background:#fde3df;color:#b3261e;}
+  .vote-bar{display:flex;height:26px;border-radius:7px;overflow:hidden;background:#eef1ed;border:1px solid var(--borde);}
+  .vb-seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;min-width:26px;transition:flex .4s;}
+  .vb-seg.s-fav{background:#17a06a;} .vb-seg.s-cond{background:#e8933f;color:#2a1a00;} .vb-seg.s-obj{background:#c0392b;}
+  .vote-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;margin-top:8px;color:var(--txt2);}
+  .vote-legend b{color:var(--txt);}
+  .vdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+  .vdot.s-fav{background:#17a06a;} .vdot.s-cond{background:#e8933f;} .vdot.s-obj{background:#c0392b;}
+  .vote-result{margin-top:10px;padding:7px 11px;border-radius:8px;font-size:12.5px;font-weight:600;color:#fff;}
+  .vote-result.q-fav{background:#17a06a;} .vote-result.q-cond{background:#cf7318;} .vote-result.q-obj{background:#c0392b;} .vote-result.q-no{background:#7a7f88;}
+  .vote-result b{color:rgba(255,255,255,.85);}
+  .vote-rule{font-size:11px;color:var(--txt2);margin-top:7px;line-height:1.5;}
+  .vote-rule b{color:var(--verde);}
+
+  /* Mini-diagrama SVG animado del flujo entre núcleos */
+  .ndiagram-wrap{position:relative;background:var(--card);border:1px solid var(--borde);border-radius:11px;padding:10px 10px 6px;margin:8px 0 12px;}
+  .dedge-hit:hover ~ .dedge, .ndiagram .dedge.hover{stroke:var(--mesa)!important;stroke-width:3.4!important;}
+  .ntip{position:absolute;z-index:20;max-width:300px;background:#132a24;color:#fff;border:1px solid var(--dorado);border-radius:10px;padding:10px 12px;font-size:11.5px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .15s,transform .15s;display:none;}
+  .ntip.show{opacity:1;transform:none;display:block;}
+  .ntip .tt{font-weight:800;color:var(--dorado);font-size:12px;margin-bottom:6px;display:block;}
+  .ntip .trow{margin-bottom:7px;}
+  .ntip .trow:last-child{margin-bottom:0;}
+  .ndiagram{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
+  .ndiagram .dnode rect:first-child{transition:filter .3s;}
+  .ndiagram .dnode.on rect:first-child{filter:drop-shadow(0 0 5px rgba(184,147,71,.75));}
+  .ndiagram .dnode .nfill{transition:opacity .4s,fill .4s;}
+  .ndiagram .dnode.plen rect:first-child{filter:drop-shadow(0 2px 5px rgba(15,140,130,.3));}
+  .ndiagram .dnode.on{animation:nodePop .4s ease;}
+  @keyframes nodePop{0%{transform-box:fill-box;}50%{opacity:.85;}100%{}}
+  .ndiagram .dedge{transition:stroke .3s;}
+  .ndiagram .dedge.on{stroke-width:3;filter:drop-shadow(0 0 3px rgba(184,147,71,.6));}
+  .nstep-cap{font-size:11.5px;color:var(--verde);text-align:center;margin-top:4px;min-height:16px;font-weight:600;}
+  .nreplay{font-size:11px;font-weight:700;color:#fff;background:var(--mesa);border:none;border-radius:14px;padding:3px 11px;cursor:pointer;}
+  .nreplay:hover{background:#0b6f67;}
+
+  /* mobile */
+  .menuBtn{display:none;background:none;border:1px solid var(--borde);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:16px;}
+  @media(max-width:900px){
+    aside{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:.25s;}
+    aside.open{transform:none;}
+    .menuBtn{display:block;}
+    .content{padding:18px 16px 50px;}
+    .topbar{padding:14px 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="aside">
+    <div class="brand">
+      <div class="crest">UNAL</div>
+      <h1>Gobernanza de IA<span>Mesa Técnica · DNED–DIVULAB</span></h1>
+    </div>
+    <nav id="nav">
+      <button data-view="overview" class="active"><span class="ic">📊</span> Resumen general</button>
+      <button data-view="estructura"><span class="ic">🏛</span> Estructura de gobernanza</button>
+      <button data-view="procesos"><span class="ic">🔄</span> Procesos y ciclo</button>
+      <button data-view="riesgo"><span class="ic">⚠️</span> Gestión de riesgo</button>
+      <button data-view="raci"><span class="ic">🧭</span> Roles (RACI)</button>
+      <button data-view="referencia"><span class="ic">🛰</span> Modelos de referencia</button>
+      <button data-view="simulador"><span class="ic">🎮</span> Simulador de operación</button>
+      <button data-view="sesiones"><span class="ic">📋</span> Sesiones y documentos</button>
+      <button data-view="participantes"><span class="ic">👥</span> Participantes por mesa</button>
+      <button data-view="cocreacion"><span class="ic">🧩</span> Mesas de co-creación</button>
+      <button data-view="recomendaciones"><span class="ic">📝</span> Recomendaciones</button>
+    </nav>
+    <div class="foot">Dashboard interactivo · Fuentes: Propuesta Mesa Técnica de IA, presentación Gobernanza IA y comentarios J.M. Sánchez Torres (2026).</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menuBtn" id="menuBtn">☰</button>
+        <div><h2 id="viewTitle">Resumen general</h2><div class="sub" id="viewSub">Panorama del modelo de gobernanza de la IA en la UNAL</div></div>
+      </div>
+      <span class="pill">Modelo multinivel · multicampus</span>
+    </div>
+
+    <div class="content">
+
+      <!-- ========== OVERVIEW ========== -->
+      <section class="view active" id="overview">
+        <div class="kpis">
+          <div class="kpi teal"><div class="n">4</div><div class="l">Núcleos funcionales de la Mesa Técnica</div></div>
+          <div class="kpi blue"><div class="n">14</div><div class="l">Mesas de trabajo</div></div>
+          <div class="kpi ok"><div class="n">11</div><div class="l">Documentos entregados</div><div class="d" style="color:var(--verde-ok)">79% de avance</div></div>
+          <div class="kpi warn"><div class="n">3</div><div class="l">Documentos pendientes</div></div>
+          <div class="kpi pur"><div class="n">9</div><div class="l">Sedes integradas (multicampus)</div></div>
+          <div class="kpi"><div class="n">10</div><div class="l">Recomendaciones académicas incorporadas</div></div>
+        </div>
+
+        <h3 class="secttl">Panorama</h3>
+        <div class="grid g2">
+          <div class="card">
+            <h4>Avance de documentos por mesa</h4>
+            <span class="tag">11 entregados · 3 pendientes de 14 mesas</span>
+            <div class="chart-wrap"><canvas id="chDocs"></canvas></div>
+          </div>
+          <div class="card">
+            <h4>Dimensiones de la gobernanza</h4>
+            <span class="tag">Cobertura multidimensional del modelo</span>
+            <div class="chart-wrap"><canvas id="chRadar"></canvas></div>
+          </div>
+        </div>
+
+        <h3 class="secttl">Los cuatro pilares de funciones de la Mesa Técnica</h3>
+        <div class="grid g4">
+          <div class="card"><div class="accent" style="background:var(--mesa)"></div><h4>Estrategia</h4><span class="tag">Coherencia misional y lineamientos</span></div>
+          <div class="card"><div class="accent" style="background:var(--azul)"></div><h4>Técnica</h4><span class="tag">Infraestructura, HPC, Green Computing</span></div>
+          <div class="card"><div class="accent" style="background:var(--control)"></div><h4>Evaluación · Auditoría</h4><span class="tag">Riesgo, legalidad, supervisión</span></div>
+          <div class="card"><div class="accent" style="background:var(--socio)"></div><h4>Acompañamiento</h4><span class="tag">Co-creación, territorio, ética</span></div>
+        </div>
+      </section>
+
+      <!-- ========== ESTRUCTURA ========== -->
+      <section class="view" id="estructura">
+        <h3 class="secttl">Modelo multinivel</h3>
+        <div class="grid g3">
+          <div class="card"><div class="accent" style="background:var(--cned)"></div><h4>Nivel 1 · CNED</h4><span class="tag">Comité Nacional de Estrategia Digital</span><ul><li>Definición política de alto nivel</li><li>Aprobación normativa</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--mesa)"></div><h4>Nivel 2 · Mesa Técnica de IA</h4><span class="tag">Sala adscrita al CNED</span><ul><li>Ejecución · evaluación · auditoría</li><li>PLASI · ciclo de vida · ciclo trienal</li><li>Co-creación universitaria</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--socio)"></div><h4>Nivel 3 · Comunidad Universitaria</h4><span class="tag">Laboratorios vivos</span><ul><li>9 Sedes · facultades · grupos</li><li>Soberanía epistémica · equidad territorial</li></ul></div>
+        </div>
+
+        <h3 class="secttl">Composición de los 4 núcleos funcionales</h3>
+        <div class="grid g2">
+          <div class="card"><div class="accent" style="background:var(--azul)"></div><h4>1.1 Núcleo Estratégico Misional</h4><ul><li>Vicerrector General</li><li>Vicerrector Académico</li><li>Vicerrector de Investigación</li><li>Dir. Nacional Extensión y Propiedad Intelectual</li></ul><div class="note"><b>Funciones:</b> priorizar por aporte misional; velar por pertinencia pedagógica e investigativa; proteger la soberanía epistémica.<br><b>Decide:</b> ¿aporta a las misiones y al proyecto educativo?</div></div>
+          <div class="card"><div class="accent" style="background:var(--teal)"></div><h4>1.2 Núcleo Técnico & Green Computing</h4><ul><li>Dir. Nacional Estrategia Digital</li><li>Coordinadores de Ciberseguridad</li><li>Admin. Centro de Datos / HPC</li><li>Representantes TI de Sedes</li></ul><div class="note"><b>Funciones:</b> evaluar infraestructura y seguridad; aplicar las DT 1-25; medir y reducir la huella energética; interoperabilidad y MLOps.<br><b>Decide:</b> ¿hay cómputo y seguridad suficientes? ¿cumple las DT?</div></div>
+          <div class="card"><div class="accent" style="background:var(--control)"></div><h4>1.3 Núcleo Control & Jurídico-Fiscal</h4><ul><li>Dir. Nacional Planeación</li><li>Jefe Oficina Jurídica Nacional</li><li>Delegado Gestión Ambiental</li><li>Jefe de Control Interno</li></ul><div class="note"><b>Funciones:</b> verificar legalidad y licencias; garantizar Habeas Data; evaluar viabilidad presupuestal; software libre y RAEE. <b>Puede objetar.</b><br><b>Decide:</b> ¿es legal, viable y protege los datos?</div></div>
+          <div class="card"><div class="accent" style="background:var(--socio)"></div><h4>1.4 Núcleo Socio-Ambiental "Bilingüe" & Territorial</h4><ul><li>Investigadores IA y sostenibilidad</li><li>Delegados facultades / grupos</li><li>Sedes de Presencia Nacional</li><li>Estudiantes, docentes, administrativos</li></ul><div class="note"><b>Funciones:</b> evaluar afectación a derechos y a poblaciones; saberes territoriales; salud mental y bienestar digital. <b>Objeción prevalente.</b><br><b>Decide:</b> ¿afecta derechos? ¿debe objetarse o escalarse?</div></div>
+        </div>
+
+        <h3 class="secttl">Arquitectura de decisiones (subsidiariedad)</h3>
+        <div class="grid g4">
+          <div class="card"><div class="accent" style="background:var(--cned)"></div><h4>Nacional</h4><ul><li>Política y normativa</li><li>Alto riesgo / toda la UNAL</li><li>Datos sensibles · PLASI</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--teal)"></div><h4>Sede</h4><ul><li>Infraestructura y HPC local</li><li>Riesgos territoriales</li><li>Corresponsabilidad</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--azul)"></div><h4>Facultad / Grupo</h4><ul><li>IA en aula</li><li>Investigación y extensión</li><li>Bajo riesgo local</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--dorado)"></div><h4>Compartidas</h4><ul><li>Riesgo medio multi-sede</li><li>Herramientas transversales</li><li>Habeas Data · sostenibilidad</li></ul></div>
+        </div>
+        <div class="note">Principio de subsidiariedad: decidir en el nivel más cercano al riesgo y al valor; centralizar solo por excepción (afectación institucional, datos sensibles, riesgo elevado o estándares comunes).</div>
+      </section>
+
+      <!-- ========== PROCESOS ========== -->
+      <section class="view" id="procesos">
+        <h3 class="secttl">Plan de trabajo 2025–2027 (5 fases)</h3>
+        <div class="flow">
+          <div class="step" style="border-top-color:var(--socio)"><div class="ph">1</div><h5>Diagnóstico</h5><div class="dt">2° sem. 2025</div><ul><li>Análisis del taller Menti</li></ul></div>
+          <div class="step" style="border-top-color:var(--azul)"><div class="ph">2</div><h5>Co-construcción</h5><div class="dt">Feb–Sep 2026</div><ul><li>Taller focalizado (13 mesas)</li><li>Co-creación universitaria</li></ul></div>
+          <div class="step" style="border-top-color:#8a4b2a"><div class="ph">3</div><h5>Validación</h5><div class="dt">Oct 2026</div><ul><li>Validación externa</li><li>Diálogos en sedes</li></ul></div>
+          <div class="step" style="border-top-color:var(--purpura)"><div class="ph">4</div><h5>Revisión y aprobación</h5><div class="dt">Nov 2026 – Feb 2027</div><ul><li>Revisión legal</li><li>Aprobación institucional</li></ul></div>
+          <div class="step" style="border-top-color:#4b3b8f"><div class="ph">5</div><h5>Implementación</h5><div class="dt">Mar–Jun 2027</div><ul><li>Lanzamiento</li><li>Evaluación y ajustes</li></ul></div>
+        </div>
+
+        <h3 class="secttl">Procesos clave de la Mesa Técnica</h3>
+        <div class="grid g3">
+          <div class="card"><h4>🔁 Ciclo de vida de modelos</h4><span class="tag">Gestión de extremo a extremo</span><ul><li>Propuesta y registro</li><li>Evaluación de riesgo</li><li>Autorización</li><li>Despliegue y monitoreo</li><li>Auditoría y suspensión</li></ul></div>
+          <div class="card"><h4>🗂 PLASI</h4><span class="tag">Registro institucional de modelos</span><ul><li>Inventario de sistemas de IA</li><li>Trazabilidad y transparencia</li><li>Clasificación por riesgo y misión</li></ul></div>
+          <div class="card"><h4>♻ Ciclo trienal + Green Computing</h4><span class="tag">Revisión y sostenibilidad</span><ul><li>Revisión trienal del modelo</li><li>Medición de huella de carbono</li><li>Marcos ambientales reconocidos</li></ul></div>
+        </div>
+
+        <h3 class="secttl">Responsables por fase</h3>
+        <div class="card">
+          <table>
+            <thead><tr><th>Fase</th><th>Periodo</th><th>Rol estratégico</th><th>Rol operativo</th></tr></thead>
+            <tbody>
+              <tr><td>Diagnóstico → Validación</td><td>2025 – Oct 2026</td><td>DNED (define lineamientos)</td><td>DNED + Divulab (talleres, ajustes, divulgación)</td></tr>
+              <tr><td>Revisión → Implementación</td><td>Nov 2026 – Jun 2027</td><td>Mesa Técnica · GIIA-UNAL (gobernanza)</td><td>Mesa Técnica (lanzamiento, monitoreo)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== RIESGO ========== -->
+      <section class="view" id="riesgo">
+        <h3 class="secttl">Niveles de riesgo (por afectación a derechos fundamentales)</h3>
+        <div class="card">
+          <div class="risk">
+            <div class="row"><div><b>Inaceptable</b></div><div class="bar" style="background:#7a1414">Prohibido — vulnera derechos fundamentales</div></div>
+            <div class="row"><div><b>Alto</b></div><div class="bar" style="background:#c0392b">Autorización CNED + auditoría previa/posterior + veto</div></div>
+            <div class="row"><div><b>Medio</b></div><div class="bar" style="background:#e8933f;color:#2a1a00">Autorización de sede + supervisión de la Mesa Técnica</div></div>
+            <div class="row"><div><b>Bajo</b></div><div class="bar" style="background:#17a06a">Autorización local (facultad) + registro</div></div>
+          </div>
+          <div class="note">El veto se gradúa por el riesgo a los derechos, no por el dominio: un sistema que predice deserción, asigna becas o evalúa propuestas de investigación puede lesionar derechos tanto como uno clínico. Se recomienda adoptar una definición de riesgo contextual (proyecto de ley de IA de Colombia / marco UE adaptado).</div>
+        </div>
+
+        <h3 class="secttl">Taxonomía de sistemas de IA (por propósito y origen)</h3>
+        <div class="grid g3">
+          <div class="card"><div class="accent" style="background:#c0392b"></div><h4>Decisión académico-administrativa</h4><ul><li>Deserción, becas, admisiones</li><li>Evaluación de investigación</li></ul><span class="st p">Riesgo típico: Alto</span></div>
+          <div class="card"><div class="accent" style="background:var(--azul)"></div><h4>IA en el aula</h4><ul><li>Enseñanza–aprendizaje</li><li>Integridad académica</li></ul><span class="st e">Riesgo típico: Bajo–Medio</span></div>
+          <div class="card"><div class="accent" style="background:var(--teal)"></div><h4>IA en investigación y extensión</h4><ul><li>Reproducibilidad</li><li>Propiedad intelectual</li></ul><span class="st e">Riesgo típico: Medio</span></div>
+          <div class="card"><div class="accent" style="background:var(--control)"></div><h4>IA desarrollada en la UNAL</h4><ul><li>Modelos propios</li><li>Soberanía tecnológica</li></ul><span class="st e">Riesgo típico: Variable</span></div>
+          <div class="card"><div class="accent" style="background:var(--purpura)"></div><h4>IA generativa de terceros</h4><ul><li>Herramientas comerciales</li><li>Fuga de datos / dependencia</li></ul><span class="st p">Riesgo típico: Medio–Alto</span></div>
+          <div class="card"><div class="accent" style="background:#8a5a2a"></div><h4>IA agéntica</h4><ul><li>Agentes autónomos</li><li>Supervisión reforzada</li></ul><span class="st p">Riesgo típico: Alto (emergente)</span></div>
+        </div>
+
+        <h3 class="secttl">Distribución estimada por nivel de riesgo</h3>
+        <div class="grid g2">
+          <div class="card"><h4>Perfil de riesgo del portafolio</h4><span class="tag">Distribución ilustrativa de iniciativas de IA</span><div class="chart-wrap sm"><canvas id="chRisk"></canvas></div></div>
+          <div class="card"><h4>Gobernanza corporativa de la IA</h4><span class="tag">La gobernanza de IA supera al gobierno de TI</span>
+            <ul><li><b>Gobierno corporativo</b> (UNAL) contiene a la gobernanza de IA</li><li>Gobernanza de IA ∩ <b>gobierno de TI</b> (infraestructura, ciberseguridad)</li><li>Gobernanza de IA ∩ <b>gobierno de datos</b> (Habeas Data, linaje)</li><li>Abarca las 3 misiones + dimensión ética y ambiental</li></ul>
+            <div class="note">Operación tecnológica ≠ gobernanza: requiere capacidades habilitantes mínimas y legitimidad institucional (corresponsabilidad nacional ↔ sedes ↔ facultades).</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== RACI ========== -->
+      <section class="view" id="raci">
+        <h3 class="secttl">Matriz RACI por nivel de riesgo y misión</h3>
+        <div class="card">
+          <div class="legend-inline">
+            <span><i class="pill2 r-R">R</i> Responsable / Propone-Implementa</span>
+            <span><i class="pill2 r-A">A</i> Autoriza (rinde cuentas)</span>
+            <span><i class="pill2 r-C">C</i> Consultado / Evalúa</span>
+            <span><i class="pill2 r-I">I</i> Informado</span>
+            <span><i class="pill2 r-S">S</i> Supervisa / puede Suspender</span>
+          </div>
+          <table>
+            <thead><tr><th>Actividad sobre una iniciativa de IA</th><th>Facultad / Grupo</th><th>Sede</th><th>Mesa Técnica</th><th>CNED</th><th>Jurídico / Control</th></tr></thead>
+            <tbody id="raciBody"></tbody>
+          </table>
+          <div class="note">Propuesta inicial para la discusión (Rec. 8): define no solo quién participa, sino quién decide qué, según riesgo y apoyo misional. El veto responde al riesgo a derechos fundamentales (Rec. 4).</div>
+        </div>
+      </section>
+
+      <!-- ========== REFERENCIA ========== -->
+      <section class="view" id="referencia">
+        <h3 class="secttl">Benchmarking internacional — Norte Global</h3>
+        <div class="grid g3">
+          <div class="card"><div class="accent" style="background:#2a6fb0"></div><h4>MIT</h4><span class="tag">Descentralizado</span><ul><li>SERC · Ad Hoc Committee</li><li>Programa semilla USD 100.000</li><li>Casuística abierta</li></ul></div>
+          <div class="card"><div class="accent" style="background:#b08a2a"></div><h4>UCLA</h4><span class="tag">Matricial-centralizado</span><ul><li>UC AI Council · HAIC</li><li>Veto clínico (HIPAA)</li><li>9 principios de IA responsable</li></ul></div>
+          <div class="card"><div class="accent" style="background:#9c2a2a"></div><h4>Stanford</h4><span class="tag">Hub-and-spoke</span><ul><li>HAI · AIMES · AI Index</li><li>Reglas de oro</li><li>Huella de carbono</li></ul></div>
+        </div>
+
+        <h3 class="secttl">Referentes del Sur Global / Latinoamérica <span style="font-size:11px;color:var(--txt2)">(Rec. 1)</span></h3>
+        <div class="grid g4">
+          <div class="card"><div class="accent" style="background:#17806a"></div><h4>Tec de Monterrey</h4><span class="tag">México · multicampus</span><ul><li>Integridad académica con IA</li></ul></div>
+          <div class="card"><div class="accent" style="background:#1f7a4d"></div><h4>USP</h4><span class="tag">Brasil · normativo</span><ul><li>Portaria GR 2026</li></ul></div>
+          <div class="card"><div class="accent" style="background:#2e8b57"></div><h4>UNAM</h4><span class="tag">México · en construcción</span><ul><li>Primeros avances</li></ul></div>
+          <div class="card"><div class="accent" style="background:var(--dorado)"></div><h4>INTEGRITY-AI</h4><span class="tag">Red colombiana / LatAm</span><ul><li>U. del Cauca</li><li>U. San Buenaventura</li></ul></div>
+        </div>
+
+        <h3 class="secttl">Matriz comparativa</h3>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Criterio</th><th>MIT</th><th>UCLA</th><th>Stanford</th></tr></thead>
+            <tbody>
+              <tr><td>Modelo</td><td>Descentralizado</td><td>Matricial-centralizado</td><td>Hub-and-spoke</td></tr>
+              <tr><td>Carácter de decisiones</td><td>Consultivo / recomendación</td><td>Mandatorio (ciber / clínico)</td><td>Orientador / pedagógico</td></tr>
+              <tr><td>Órganos principales</td><td>SERC, Ad Hoc Committee</td><td>UC AI Council, HAIC</td><td>HAI, AIMES</td></tr>
+              <tr><td>Dimensión ambiental</td><td>Impacto del código</td><td>Eficiencia en data centers</td><td>CO₂e en AI Index</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== SIMULADOR ========== -->
+      <section class="view" id="simulador">
+        <h3 class="secttl">Simulación del procedimiento de operación de una iniciativa de IA</h3>
+        <div class="sim-grid">
+          <!-- Formulario -->
+          <div class="card sim-form">
+            <h4>⚙️ Configurar iniciativa</h4>
+            <span class="tag">Define la iniciativa y el modelo calcula riesgo y ruta de gobernanza.</span>
+
+            <label>Nombre de la iniciativa</label>
+            <input id="simName" type="text" value="Predictor de deserción estudiantil" />
+
+            <label>Tipo de sistema de IA (taxonomía)</label>
+            <select id="simType">
+              <option value="admin">Decisión académico-administrativa</option>
+              <option value="aula">IA en el aula (enseñanza)</option>
+              <option value="inv">IA en investigación y extensión</option>
+              <option value="propia">IA desarrollada en la UNAL</option>
+              <option value="genai">IA generativa de terceros</option>
+              <option value="agentica">IA agéntica (autónoma)</option>
+            </select>
+
+            <label>Origen (dónde nace)</label>
+            <select id="simOrigin">
+              <option value="facultad">Facultad / Grupo de investigación</option>
+              <option value="sede">Sede</option>
+            </select>
+
+            <label>Datos que trata</label>
+            <select id="simData">
+              <option value="publico">Datos públicos / anonimizados</option>
+              <option value="personal">Datos personales</option>
+              <option value="sensible">Datos sensibles</option>
+            </select>
+
+            <label>Alcance del despliegue</label>
+            <select id="simScope">
+              <option value="local">Local (una facultad / sede)</option>
+              <option value="multi">Multi-sede</option>
+              <option value="unal">Toda la UNAL</option>
+            </select>
+
+            <div class="btnrow">
+              <button class="sim-btn primary" id="simRun">▶ Simular</button>
+              <button class="sim-btn ghost" id="simStep" disabled>⏭ Paso a paso</button>
+              <button class="sim-btn ghost" id="simReset">↺ Reiniciar</button>
+            </div>
+
+            <label style="margin-top:18px;">Escenarios de ejemplo</label>
+            <div class="scenarios" id="simScenarios"></div>
+
+            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--borde);">
+              <div style="font-size:12px;color:var(--txt2);">Nivel de riesgo calculado</div>
+              <div style="margin-top:8px;" id="simRiskOut"><span class="riskbadge rb-medio">—</span></div>
+            </div>
+          </div>
+
+          <!-- Pipeline + veredicto -->
+          <div>
+            <div class="card">
+              <h4>🔄 Flujo de operación (subsidiariedad)</h4>
+              <span class="tag">Facultad → Sede → Mesa Técnica de IA → (CNED si escala) → Operación</span>
+              <div class="pipeline" id="simPipe" style="margin-top:16px;"></div>
+            </div>
+            <div id="simVerdict" style="margin-top:18px;"></div>
+          </div>
+        </div>
+        <div class="note">El procedimiento aplica el principio de subsidiariedad (decidir en el nivel más cercano al riesgo y al valor) y gradúa la autorización, supervisión y veto según el riesgo a los derechos fundamentales. Modelo ilustrativo para la discusión institucional.</div>
+      </section>
+
+      <!-- ========== SESIONES ========== -->
+      <section class="view" id="sesiones">
+        <h3 class="secttl">Estado de las 14 mesas de trabajo</h3>
+        <div class="grid g2">
+          <div class="card"><h4>Documentos entregados vs. pendientes</h4><div class="chart-wrap sm"><canvas id="chStatus"></canvas></div></div>
+          <div class="card"><h4>Sesiones S1–S4 completadas</h4><div class="chart-wrap sm"><canvas id="chSessions"></canvas></div></div>
+        </div>
+        <h3 class="secttl">Detalle por mesa</h3>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>#</th><th>Mesa de trabajo</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>Documento final</th></tr></thead>
+            <tbody id="sessBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== PARTICIPANTES ========== -->
+      <section class="view" id="participantes">
+        <h3 class="secttl">Totales de participación</h3>
+        <div class="kpis" style="margin-bottom:8px;">
+          <div class="kpi blue"><div class="n">108</div><div class="l">Participantes</div></div>
+          <div class="kpi teal"><div class="n">21</div><div class="l">Facilitadores (DNED)</div></div>
+          <div class="kpi ok"><div class="n">129</div><div class="l">Total de personas</div><div class="d" style="color:var(--verde-ok)">108 + 21</div></div>
+          <div class="kpi"><div class="n">14</div><div class="l">Mesas de trabajo</div></div>
+        </div>
+
+        <h3 class="secttl">Participantes por mesa de trabajo</h3>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="font-size:13px;font-weight:600;color:var(--txt2);">Seleccionar mesa:</label>
+            <select id="selMesa" style="padding:9px 12px;border:1px solid var(--borde);border-radius:9px;font-size:13px;background:var(--verde-crema);color:var(--txt);min-width:280px;flex:1;max-width:520px;"></select>
+            <span class="pill2" id="pConteo" style="background:var(--mesa)">—</span>
+          </div>
+        </div>
+
+        <div class="grid g2" style="margin-bottom:4px;">
+          <div class="card">
+            <h4>Participantes de la mesa</h4>
+            <span class="tag" id="pMesaTitulo">—</span>
+            <div style="overflow-x:auto;margin-top:12px;">
+              <table>
+                <thead><tr><th>#</th><th>Participante</th><th>Rol</th><th>Dependencia / Sede</th></tr></thead>
+                <tbody id="pBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Participantes por mesa</h4>
+            <span class="tag">Número de personas con participación (X) en cada mesa</span>
+            <div class="chart-wrap" style="height:300px"><canvas id="chPart"></canvas></div>
+          </div>
+        </div>
+
+        <h3 class="secttl">Conteo por rol</h3>
+        <div class="grid g2">
+          <div class="card">
+            <h4>Distribución por rol</h4>
+            <span class="tag">Número de personas por rol (participantes + facilitadores)</span>
+            <div class="chart-wrap" style="height:280px"><canvas id="chRol"></canvas></div>
+          </div>
+          <div class="card">
+            <h4>Detalle por rol</h4>
+            <div style="overflow-x:auto;margin-top:10px;">
+              <table>
+                <thead><tr><th>Rol</th><th>N.º de personas</th></tr></thead>
+                <tbody id="pRolBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="secttl">Matriz de participación (persona × mesa)</h3>
+        <div class="card" style="overflow-x:auto;">
+          <span class="tag">Cada ✓ corresponde a una “X” del archivo: la persona participa en esa mesa.</span>
+          <table id="pMatriz" style="margin-top:10px;font-size:12px;"></table>
+        </div>
+
+        <h3 class="secttl">Resumen general de participación</h3>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>#</th><th>Mesa de trabajo</th><th>N.º participantes</th></tr></thead>
+            <tbody id="pResumen"></tbody>
+          </table>
+        </div>
+        <div class="note" id="pNota"></div>
+      </section>
+
+      <!-- ========== MESAS DE CO-CREACIÓN ========== -->
+      <section class="view" id="cocreacion">
+        <div class="note" style="margin-bottom:6px;">Pestaña específica para las mesas de co-creación priorizadas. Reúne los participantes por rol y la metodología de trabajo. Los nombres se muestran como marcadores de posición (— Participante NN —) a la espera del listado nominal definitivo.</div>
+
+        <h3 class="secttl">Metodología de co-creación · 4 sesiones por mesa</h3>
+        <div class="card" style="margin-bottom:14px;">
+          <h4>Cómo se construyeron los documentos</h4>
+          <span class="tag">Cada mesa trabajó en <b>4 sesiones</b>. En cada sesión se ajustaban los documentos de manera <b>incremental</b>, avanzando por <b>versiones</b> hasta consolidar el entregable.</span>
+          <div class="cocre-flow">
+            <div class="cocre-step" style="--c:var(--socio)"><div class="cs-n">S1</div><div class="cs-t">Encuadre y borrador</div><div class="cs-v">v0.1 — alcance, objetivos y estructura inicial del documento</div></div>
+            <div class="cocre-ar">→</div>
+            <div class="cocre-step" style="--c:var(--azul)"><div class="cs-n">S2</div><div class="cs-t">Desarrollo de contenido</div><div class="cs-v">v0.2 — redacción de secciones y primeros lineamientos</div></div>
+            <div class="cocre-ar">→</div>
+            <div class="cocre-step" style="--c:var(--control)"><div class="cs-n">S3</div><div class="cs-t">Revisión y ajustes</div><div class="cs-v">v0.3 — retroalimentación, correcciones e integración de aportes</div></div>
+            <div class="cocre-ar">→</div>
+            <div class="cocre-step" style="--c:var(--purpura)"><div class="cs-n">S4</div><div class="cs-t">Consolidación y cierre</div><div class="cs-v">v1.0 — versión final validada por la mesa</div></div>
+          </div>
+          <div class="note">El trabajo es <b>incremental</b>: cada sesión parte de la versión anterior y la mejora, de modo que el documento madura progresivamente (v0.1 → v0.2 → v0.3 → v1.0) con la participación de todos los roles de la mesa.</div>
+        </div>
+
+        <h3 class="secttl">Mesas priorizadas</h3>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="font-size:13px;font-weight:600;color:var(--txt2);">Seleccionar mesa:</label>
+            <select id="selCo" style="padding:9px 12px;border:1px solid var(--borde);border-radius:9px;font-size:13px;background:var(--verde-crema);color:var(--txt);min-width:320px;flex:1;max-width:620px;"></select>
+            <span class="pill2" id="coConteo" style="background:var(--mesa)">—</span>
+          </div>
+        </div>
+
+        <div class="grid g2" style="margin-bottom:4px;">
+          <div class="card">
+            <h4 id="coTitulo">Participantes por rol</h4>
+            <span class="tag" id="coFoco">—</span>
+            <div style="overflow-x:auto;margin-top:12px;">
+              <table>
+                <thead><tr><th>Rol / estamento</th><th>Participante / perfil</th><th>Dependencia / Sede</th></tr></thead>
+                <tbody id="coBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Documento por sesión</h4>
+            <span class="tag">Entregable de la mesa y versión producida en cada una de las 4 sesiones</span>
+            <div id="coDoc" style="margin-top:12px;"></div>
+            <div class="note">Trabajo incremental: cada sesión parte de la versión anterior (v0.1 → v0.2 → v0.3 → v1.0).</div>
+          </div>
+        </div>
+
+        <h3 class="secttl">Resumen de las mesas de co-creación</h3>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>#</th><th>Mesa de co-creación</th><th>Participantes</th><th>Sesiones</th><th>Entregable</th></tr></thead>
+            <tbody id="coResumen"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== RECOMENDACIONES ========== -->
+      <section class="view" id="recomendaciones">
+        <h3 class="secttl">Comentarios académicos incorporados</h3>
+        <div class="card" style="margin-bottom:18px;">
+          <h4>📝 Prof. Jenny Marcela Sánchez Torres</h4>
+          <span class="tag">Profesora Titular · Facultad de Ingeniería · Bogotá, 01-oct-2026 — 10 recomendaciones, todas incorporadas al modelo</span>
+        </div>
+        <div id="recList"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   DATOS
+   ============================================================ */
+const MESAS=[
+  ['1','Gestión del cambio y apropiación ética de la IA',1,1,1,1,'e'],
+  ['2','Principios, usos y límites éticos de la IA',1,1,1,1,'e'],
+  ['3','Integridad académica y citación responsable',1,1,0,0,'p'],
+  ['4','Consentimiento informado y protección de datos',1,1,1,1,'e'],
+  ['5','Identificación, evaluación y gestión de riesgos éticos',1,1,1,1,'e'],
+  ['6','Gobernanza institucional y registro de modelos (PLASI)',0,0,0,0,'p'],
+  ['7','Salud mental, bienestar digital y uso responsable',1,1,1,1,'e'],
+  ['8','Aplicaciones éticas y pedagógicas por área disciplinar',1,1,1,1,'e'],
+  ['9','Marco conceptual, normativo y regulatorio',1,1,1,1,'e'],
+  ['10','IA, diversidad cultural y enfoque etnoeducativo',0,0,0,0,'p'],
+  ['11','Lineamientos estratégicos para la política institucional',1,1,1,1,'e'],
+  ['12','Gestión estratégica de información, datos y conocimiento',1,1,1,1,'e'],
+  ['13','Identidad digital, confianza institucional y responsabilidad',0,0,0,0,'p'],
+  ['14','Brecha de género e IA',1,1,1,1,'e'],
+];
+
+/* ============================================================
+   PARTICIPACIÓN — matriz persona × mesa
+   ------------------------------------------------------------
+   El archivo oficial es una matriz donde cada "X" marca que una
+   persona participa en una mesa. Se modela como una lista de
+   personas; "mesas" contiene los números de mesa marcados con X.
+   Formato por persona:
+      {nombre:'Nombre Apellido', rol:'Rol', dep:'Dependencia/Sede',
+       mesas:[1,4,9]}   // mesas donde tiene una X
+   (Nombres como placeholder hasta cargar el archivo oficial;
+    el patrón de X es ilustrativo.)
+   ============================================================ */
+/* Cifras de control oficiales (del archivo de participación) */
+const TOTALES={participantes:108, facilitadores:21}; // total = 129
+const TOTAL_PERSONAS=TOTALES.participantes+TOTALES.facilitadores;
+
+/* Conteo por ROL (participantes + facilitadores). Ajustar con el archivo oficial;
+   la suma debe dar 129 (108 participantes + 21 facilitadores). */
+const ROLES=[
+  ['Facilitador(a) DNED', 21],
+  ['Docente', 34],
+  ['Investigador(a)', 22],
+  ['Administrativo(a)', 19],
+  ['Estudiante', 15],
+  ['Directivo(a) / Delegado(a)', 18],
+];
+
+/* Lista de personas para la MATRIZ persona × mesa.
+   Incluye participantes y facilitadores (rol = "Facilitador(a) DNED").
+   Nombres placeholder y patrón de X ilustrativo hasta cargar el archivo. */
+const PERSONAS=[
+  {nombre:'— Facilitador(a) 01 —', rol:'Facilitador(a) DNED', dep:'DNED', mesas:[1,2]},
+  {nombre:'— Facilitador(a) 02 —', rol:'Facilitador(a) DNED', dep:'DNED', mesas:[3,4]},
+  {nombre:'— Facilitador(a) 03 —', rol:'Facilitador(a) DNED', dep:'DNED', mesas:[5,6]},
+  {nombre:'— Facilitador(a) 04 —', rol:'Facilitador(a) DNED', dep:'DIVULAB', mesas:[7,8]},
+  {nombre:'— Facilitador(a) 05 —', rol:'Facilitador(a) DNED', dep:'DIVULAB', mesas:[9,10]},
+  {nombre:'— Facilitador(a) 06 —', rol:'Facilitador(a) DNED', dep:'DNED', mesas:[11,12]},
+  {nombre:'— Facilitador(a) 07 —', rol:'Facilitador(a) DNED', dep:'DNED', mesas:[13,14]},
+  {nombre:'— Participante 01 —', rol:'Docente',        dep:'Facultad', mesas:[1,2]},
+  {nombre:'— Participante 02 —', rol:'Investigador(a)',dep:'Grupo de investigación', mesas:[5,9]},
+  {nombre:'— Participante 03 —', rol:'Administrativo(a)',dep:'Sede', mesas:[3,10]},
+  {nombre:'— Participante 04 —', rol:'Estudiante',     dep:'Representación estudiantil', mesas:[7,14]},
+  {nombre:'— Participante 05 —', rol:'Directivo(a) / Delegado(a)',dep:'DNED', mesas:[4,6,13]},
+  {nombre:'— Participante 06 —', rol:'Docente',        dep:'Facultad', mesas:[8,9]},
+  {nombre:'— Participante 07 —', rol:'Investigador(a)',dep:'Grupo de investigación', mesas:[11,12]},
+];
+const PARTICIPANTES_PENDIENTE=true;  // cambiar a false cuando se carguen datos reales
+// índice derivado: personas por mesa (participantes + facilitadores)
+function personasDeMesa(num){ return PERSONAS.filter(p=>p.mesas.includes(+num)); }
+
+const RACI=[
+  ['Proponer',['R'],['C'],['I'],['—'],['—']],
+  ['Evaluar riesgo (derechos fundamentales)',['C'],['C'],['R'],['I'],['C']],
+  ['Autorizar — riesgo bajo',['A'],['C'],['I'],['—'],['—']],
+  ['Autorizar — riesgo medio',['C'],['A'],['C'],['I'],['C']],
+  ['Autorizar — riesgo alto / inaceptable',['I'],['C'],['C'],['A'],['C']],
+  ['Implementar',['R'],['R'],['C'],['—'],['—']],
+  ['Supervisar / auditar en operación',['I'],['C'],['S'],['I'],['S']],
+  ['Suspender (veto por riesgo a derechos)',['I'],['I'],['S'],['A'],['S']],
+];
+
+const RECS=[
+  [1,'Incluir referentes del Sur Global / Latinoamérica (Tec de Monterrey, USP, UNAM, INTEGRITY-AI con U. del Cauca y U. San Buenaventura).','Sección "Modelos de referencia": órbita Sur Global con 4 referentes.'],
+  [2,'Esbozar la arquitectura de decisiones: qué decide el nivel nacional, las sedes, las facultades y qué es compartido.','Sección "Estructura": 4 capas de decisión + subsidiariedad.'],
+  [3,'La gobernanza de IA supera el gobierno de TI; está en el gobierno corporativo con intersección a TI y datos.','Sección "Riesgo": tarjeta de gobernanza corporativa (IA ⊃ TI ∩ datos).'],
+  [4,'El veto debe graduarse por riesgo a derechos fundamentales, no por "académico vs. salud".','Niveles de riesgo + fila de veto en la matriz RACI.'],
+  [5,'Distinguir tipos de sistemas de IA ("iniciativas de IA" es muy amplio).','Taxonomía por propósito/origen (6 tipos) con riesgo típico.'],
+  [6,'Adoptar una definición de riesgo (proyecto de ley de IA de Colombia / marco UE adaptado).','4 niveles de riesgo codificados + nota de definición contextual.'],
+  [7,'Usar marcos ambientales reconocidos; consultar al prof. Moreno Mantilla y la Of. de Gestión Ambiental.','Nota en Green Computing (procesos) y gobernanza corporativa.'],
+  [8,'Propuesta tipo matriz RACI: quién propone, evalúa, autoriza, implementa, supervisa y puede suspender.','Sección "Roles (RACI)" completa, diferenciada por riesgo.'],
+  [9,'Aplicar subsidiariedad: decidir en el nivel más cercano al riesgo y al valor.','Nota de subsidiariedad en la arquitectura de decisiones.'],
+  [10,'Incorporar legitimidad institucional y capacidades habilitantes; separar gobernanza de operación.','KPI + nota "operación ≠ gobernanza" y corresponsabilidad entre niveles.'],
+];
+
+/* ============================================================
+   RENDER TABLAS
+   ============================================================ */
+const PILL={'R':'r-R','A':'r-A','C':'r-C','I':'r-I','S':'r-S'};
+function pill(v){return v==='—'?'<span style="color:#aaa">—</span>':`<i class="pill2 ${PILL[v]}">${v}</i>`;}
+
+document.getElementById('raciBody').innerHTML=RACI.map(r=>
+  `<tr><td>${r[0]}</td>${r.slice(1).map(c=>`<td>${c.map(pill).join(' ')}</td>`).join('')}</tr>`
+).join('');
+
+const greenDot='<span class="dot" style="background:#17a06a"></span>';
+const grayDot='<span class="dot" style="background:#c5ccc8"></span>';
+document.getElementById('sessBody').innerHTML=MESAS.map(m=>
+  `<tr><td>${m[0]}</td><td>${m[1]}</td>
+   <td>${m[2]?greenDot:grayDot}</td><td>${m[3]?greenDot:grayDot}</td>
+   <td>${m[4]?greenDot:grayDot}</td><td>${m[5]?greenDot:grayDot}</td>
+   <td><span class="st ${m[6]}">${m[6]==='e'?'Entregado':'Pendiente'}</span></td></tr>`
+).join('');
+
+document.getElementById('recList').innerHTML=RECS.map(r=>
+  `<div class="card" style="margin-bottom:12px;border-left:5px solid var(--dorado)">
+     <h4 style="font-size:14px"><span style="color:var(--dorado)">Rec. ${r[0]}</span> &nbsp;<span class="st e">Incorporada</span></h4>
+     <div style="font-size:13px;margin-top:6px">${r[1]}</div>
+     <div class="note" style="margin-top:9px">${r[2]}</div>
+   </div>`
+).join('');
+
+/* ============================================================
+   PARTICIPACIÓN POR MESA (matriz persona × mesa)
+   ============================================================ */
+const mesaNombre={}; MESAS.forEach(m=>mesaNombre[m[0]]=m[1]);
+function nParticipantes(num){ return personasDeMesa(num).length; }
+
+// poblar selector
+document.getElementById('selMesa').innerHTML=MESAS.map(m=>
+  `<option value="${m[0]}">Mesa ${m[0]} — ${m[1]}</option>`).join('');
+
+function renderParticipantesMesa(id){
+  const lista=personasDeMesa(id);
+  document.getElementById('pMesaTitulo').textContent=`Mesa ${id} — ${mesaNombre[id]||''}`;
+  document.getElementById('pConteo').textContent=`${lista.length} participante(s)`;
+  document.getElementById('pBody').innerHTML = lista.length
+    ? lista.map((p,i)=>`<tr><td>${i+1}</td><td>${p.nombre}</td><td>${p.rol||'—'}</td><td>${p.dep||'—'}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="color:var(--txt2)">Sin participantes registrados.</td></tr>`;
+}
+document.getElementById('selMesa').addEventListener('change',e=>renderParticipantesMesa(e.target.value));
+
+// matriz persona × mesa (✓ = X del archivo)
+(function renderMatriz(){
+  const head='<thead><tr><th style="position:sticky;left:0;background:var(--verde-prof)">Participante</th>'
+    + MESAS.map(m=>`<th title="${m[1]}">M${m[0]}</th>`).join('')
+    + '<th>Total</th></tr></thead>';
+  const rows=PERSONAS.map(p=>{
+    const cells=MESAS.map(m=>{
+      const on=p.mesas.includes(+m[0]);
+      return `<td style="text-align:center">${on?'<span style="color:var(--verde-ok);font-weight:800">✓</span>':'<span style="color:#d7ddd9">·</span>'}</td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap"><b>${p.nombre}</b><br><span style="font-size:10.5px;color:var(--txt2)">${p.rol} · ${p.dep}</span></td>${cells}<td style="text-align:center"><span class="pill2" style="background:var(--mesa)">${p.mesas.length}</span></td></tr>`;
+  }).join('');
+  const totals='<tr><td style="position:sticky;left:0;background:var(--verde-crema)"><b>Total por mesa</b></td>'
+    + MESAS.map(m=>`<td style="text-align:center"><b>${nParticipantes(m[0])}</b></td>`).join('')
+    + `<td style="text-align:center"><b>${PERSONAS.reduce((a,p)=>a+p.mesas.length,0)}</b></td></tr>`;
+  document.getElementById('pMatriz').innerHTML=head+'<tbody>'+rows+totals+'</tbody>';
+})();
+
+// resumen general
+document.getElementById('pResumen').innerHTML=MESAS.map(m=>
+  `<tr><td>${m[0]}</td><td>${m[1]}</td><td><span class="pill2" style="background:var(--mesa)">${nParticipantes(m[0])}</span></td></tr>`
+).join('');
+
+// conteo por rol
+const totalRol=ROLES.reduce((a,r)=>a+r[1],0);
+document.getElementById('pRolBody').innerHTML=
+  ROLES.map(r=>`<tr><td>${r[0]}</td><td><span class="pill2" style="background:var(--mesa)">${r[1]}</span></td></tr>`).join('')
+  + `<tr style="font-weight:700;background:var(--verde-crema)"><td>Total</td><td><span class="pill2" style="background:var(--verde)">${totalRol}</span></td></tr>`;
+
+// nota de estado
+document.getElementById('pNota').innerHTML = (typeof PARTICIPANTES_PENDIENTE!=='undefined' && PARTICIPANTES_PENDIENTE)
+  ? `Totales de control: <b>${TOTALES.participantes} participantes + ${TOTALES.facilitadores} facilitadores = ${TOTAL_PERSONAS}</b> personas. Los facilitadores (DNED) se cuentan como participantes de cada mesa. Los nombres son placeholders y el patrón de participación (✓) es ilustrativo; reemplazar <code>PERSONAS</code> y, si aplica, el conteo <code>ROLES</code> con el archivo oficial.`
+  : 'Participación cargada desde el archivo oficial.';
+
+renderParticipantesMesa(MESAS[0][0]);
+
+/* ============================================================
+   MESAS DE CO-CREACIÓN (pestaña específica)
+   Nombres como placeholders (— Participante NN —) a la espera
+   del listado nominal definitivo.
+   ============================================================ */
+// Catálogo de roles con su estamento (para mostrar rol + estamento por persona).
+// rolIdx -> [rol, estamento]
+const CO_ROLES=[
+  ['Líder de mesa (DNED)','Facilitación / DNED'],
+  ['Co-facilitador(a) metodológico(a)','Facilitación / DNED'],
+  ['Experto(a) temático(a)','Docente / investigador(a)'],
+  ['Docente delegado(a) de facultad','Docente'],
+  ['Investigador(a)','Investigación'],
+  ['Delegado(a) de sede','Docente / administrativo(a)'],
+  ['Representante estudiantil','Estudiante'],
+  ['Profesional administrativo(a)','Administrativo(a)'],
+  ['Relator(a) / editor(a) del documento','Facilitación / DNED'],
+];
+// 9 sedes de la UNAL para asignar dependencia ilustrativa
+const CO_SEDES=['Bogotá','Medellín','Manizales','Palmira','Orinoquia','Amazonia','Caribe','Tumaco','La Paz'];
+let _coSeq=0;
+// genera una persona con nombre placeholder, rol, estamento, perfil y dependencia/sede
+function coP(rolIdx, perfil, dep){
+  _coSeq++;
+  const r=CO_ROLES[rolIdx];
+  return {n:`— Participante ${String(_coSeq).padStart(2,'0')} —`, rol:r[0], est:r[1], perfil:perfil, dep:dep};
+}
+// versiones por sesión: [sesion, version, estado, avance incremental del documento]
+function vers(a1,a2,a3,a4){return [
+  [1,'v0.1','Borrador','Encuadre: alcance, objetivos, glosario y estructura. '+a1],
+  [2,'v0.2','En desarrollo','Redacción de secciones y primeros lineamientos. '+a2],
+  [3,'v0.3','En revisión','Retroalimentación, correcciones e integración de aportes. '+a3],
+  [4,'v1.0','Final validada','Consolidación, revisión de estilo y aval de la mesa. '+a4],
+];}
+
+// 6 mesas priorizadas con participantes y versiones por sesión
+const CO_DATA=[
+ {id:'GC',nombre:'Gestión del cambio y apropiación ética de la IA',
+  foco:'Adopción, cultura organizacional y acompañamiento al cambio',
+  entregable:'Guía de gestión del cambio y apropiación ética de la IA',
+  personas:[
+    coP(0,'Estrategia digital y gestión del cambio','DNED–DIVULAB'),
+    coP(1,'Diseño de procesos participativos','DNED–DIVULAB'),
+    coP(2,'Cultura organizacional y adopción tecnológica','Fac. Ciencias Económicas · Bogotá'),
+    coP(3,'Innovación educativa','Fac. de Ingeniería · Medellín'),
+    coP(5,'Articulación territorial','Sede Manizales'),
+    coP(6,'Voz estudiantil','Representación estudiantil · Bogotá'),
+    coP(8,'Edición y relatoría','DNED–DIVULAB'),
+  ],
+  versiones:vers('Mapa de actores y resistencias al cambio.',
+                 'Estrategia de comunicación y sensibilización.',
+                 'Plan de formación y ruta de adopción por sede.',
+                 'Indicadores de apropiación y anexos operativos.')},
+ {id:'PR',nombre:'Principios, usos y límites éticos de la IA',
+  foco:'Principios rectores, usos permitidos y límites de uso',
+  entregable:'Documento de principios, usos y límites éticos de la IA',
+  personas:[
+    coP(0,'Gobernanza y ética de la IA','DNED–DIVULAB'),
+    coP(1,'Metodología de deliberación ética','DNED–DIVULAB'),
+    coP(2,'Ética aplicada y filosofía','Fac. de Ciencias Humanas · Bogotá'),
+    coP(4,'IA y aprendizaje automático','Fac. de Ingeniería · Medellín'),
+    coP(3,'Docencia con IA','Fac. de Ciencias · Manizales'),
+    coP(8,'Edición y relatoría','DNED–DIVULAB'),
+  ],
+  versiones:vers('Inventario de principios de referencia (OCDE, UNESCO, UE).',
+                 'Redacción de principios propios de la UNAL.',
+                 'Catálogo de usos permitidos y límites por contexto.',
+                 'Casos de aplicación y glosario definitivo.')},
+ {id:'IA',nombre:'Integridad académica y citación responsable',
+  foco:'Honestidad académica y uso/declaración de IA en trabajos',
+  entregable:'Lineamiento de integridad académica y citación responsable',
+  personas:[
+    coP(0,'Integridad académica','DNED–DIVULAB'),
+    coP(1,'Diseño instruccional','DNED–DIVULAB'),
+    coP(2,'Evaluación del aprendizaje','Fac. de Ciencias Humanas · Bogotá'),
+    coP(3,'Docencia y escritura académica','Fac. de Agronomía · Palmira'),
+    coP(6,'Perspectiva estudiantil','Representación estudiantil · Medellín'),
+    coP(8,'Edición y relatoría','DNED–DIVULAB'),
+  ],
+  versiones:vers('Tipologías de uso de IA en lo académico.',
+                 'Reglas de declaración y citación de IA.',
+                 'Rúbricas y ejemplos de citación responsable.',
+                 'Lineamiento final y guía rápida para docentes.')},
+ {id:'CO',nombre:'Consentimiento informado y protección de datos',
+  foco:'Habeas Data, consentimiento informado y datos personales',
+  entregable:'Guía de consentimiento informado y protección de datos',
+  personas:[
+    coP(0,'Protección de datos','DNED–DIVULAB'),
+    coP(1,'Gestión documental y privacidad','DNED–DIVULAB'),
+    coP(2,'Derecho y Habeas Data','Fac. de Derecho · Bogotá'),
+    coP(4,'Seguridad de la información','Fac. de Ingeniería · Manizales'),
+    coP(3,'Tratamiento de datos en investigación','Fac. de Medicina · Bogotá'),
+    coP(8,'Edición y relatoría','DNED–DIVULAB'),
+  ],
+  versiones:vers('Marco normativo (Ley 1581) y bases de datos de la UNAL.',
+                 'Modelos de consentimiento informado.',
+                 'Flujos de tratamiento y roles de responsabilidad.',
+                 'Formatos finales y lista de verificación.')},
+ {id:'RG',nombre:'Identificación, evaluación y gestión de riesgos éticos',
+  foco:'Riesgos éticos de la IA: identificación, evaluación y manejo',
+  entregable:'Marco de gestión de riesgos éticos de la IA',
+  personas:[
+    coP(0,'Gestión de riesgos','DNED–DIVULAB'),
+    coP(1,'Metodología de evaluación','DNED–DIVULAB'),
+    coP(2,'Ética y evaluación de impacto','Fac. de Ciencias Humanas · Bogotá'),
+    coP(4,'Riesgo algorítmico y sesgos','Fac. de Ingeniería · Medellín'),
+    coP(5,'Contexto territorial del riesgo','Sede Orinoquia'),
+    coP(8,'Edición y relatoría','DNED–DIVULAB'),
+  ],
+  versiones:vers('Taxonomía de riesgos éticos y catálogo inicial.',
+                 'Criterios y escala de evaluación (probabilidad × impacto).',
+                 'Matriz de riesgos y medidas de mitigación.',
+                 'Marco final con niveles de riesgo y escalamiento.')},
+ {id:'DC',nombre:'IA, diversidad cultural y enfoque etnoeducativo',
+  foco:'Interculturalidad, diversidad y enfoque etnoeducativo',
+  entregable:'Lineamiento de IA con enfoque etnoeducativo e intercultural',
+  personas:[
+    coP(0,'Interculturalidad y territorio','DNED–DIVULAB'),
+    coP(1,'Diálogo de saberes','DNED–DIVULAB'),
+    coP(2,'Etnoeducación y estudios culturales','Fac. de Ciencias Humanas · Bogotá'),
+    coP(3,'Lenguas y saberes ancestrales','Sede Amazonia'),
+    coP(5,'Pertinencia territorial','Sede Tumaco'),
+    coP(6,'Voz estudiantil intercultural','Representación estudiantil · La Paz'),
+  ],
+  versiones:vers('Mapeo de contextos culturales y brechas.',
+                 'Principios de pertinencia cultural y lingüística.',
+                 'Recomendaciones etnoeducativas y salvaguardas.',
+                 'Lineamiento final con enfoque diferencial.')},
+];
+
+const VER_COLOR={'v0.1':'var(--socio)','v0.2':'var(--azul)','v0.3':'var(--control)','v1.0':'var(--purpura)'};
+
+const selCo=document.getElementById('selCo');
+if(selCo){
+  selCo.innerHTML=CO_DATA.map((m,i)=>`<option value="${i}">${m.id} · ${m.nombre}</option>`).join('');
+  function renderCo(i){
+    const m=CO_DATA[i];
+    document.getElementById('coTitulo').textContent='Participantes por rol — '+m.id;
+    document.getElementById('coFoco').textContent='Foco: '+m.foco;
+    document.getElementById('coConteo').textContent=m.personas.length+' participantes';
+    // tabla de participantes: rol, nombre, estamento, perfil/experticia, dependencia/sede
+    document.getElementById('coBody').innerHTML=m.personas.map(p=>
+      `<tr><td style="white-space:nowrap"><b>${p.rol}</b><br><span style="font-size:10.5px;color:var(--txt2)">${p.est}</span></td>`+
+      `<td>${p.n}<br><span style="font-size:10.5px;color:var(--txt2)">${p.perfil}</span></td>`+
+      `<td style="font-size:11.5px;color:var(--txt2)">${p.dep}</td></tr>`).join('');
+    // documento + historial de versiones por sesión
+    document.getElementById('coDoc').innerHTML=
+      `<div style="font-weight:700;color:var(--verde);font-size:14px;">${m.entregable}</div>`+
+      `<div style="font-size:12px;color:var(--txt2);margin:4px 0 10px;">Construido en 4 sesiones, con ajuste incremental por versiones:</div>`+
+      `<table style="font-size:12px"><thead><tr><th>Sesión</th><th>Versión</th><th>Estado</th><th>Avance incremental</th></tr></thead><tbody>`+
+      m.versiones.map(v=>`<tr><td style="text-align:center"><b>S${v[0]}</b></td>`+
+        `<td><span class="pill2" style="background:${VER_COLOR[v[1]]}">${v[1]}</span></td>`+
+        `<td style="font-size:11.5px">${v[2]}</td>`+
+        `<td style="font-size:11.5px;color:var(--txt2)">${v[3]}</td></tr>`).join('')+
+      `</tbody></table>`;
+  }
+  selCo.addEventListener('change',e=>renderCo(+e.target.value));
+  // resumen: añade conteo por estamento
+  document.getElementById('coResumen').innerHTML=CO_DATA.map((m,i)=>
+    `<tr><td>${i+1}</td><td>${m.nombre}</td><td><span class="pill2" style="background:var(--mesa)">${m.personas.length}</span></td><td style="text-align:center">4</td><td style="font-size:12px">${m.entregable}</td></tr>`).join('');
+  renderCo(0);
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
+const TITLES={
+  overview:['Resumen general','Panorama del modelo de gobernanza de la IA en la UNAL'],
+  estructura:['Estructura de gobernanza','Niveles, núcleos y arquitectura de decisiones'],
+  procesos:['Procesos y ciclo','Plan 2025–2027, ciclo de vida de modelos y PLASI'],
+  riesgo:['Gestión de riesgo','Niveles, taxonomía de sistemas y gobernanza corporativa'],
+  raci:['Roles y responsabilidades','Matriz RACI por nivel de riesgo y misión'],
+  referencia:['Modelos de referencia','Benchmarking Norte y Sur Global'],
+  simulador:['Simulador de operación','Recorre el flujo de una iniciativa de IA por el modelo de gobernanza'],
+  sesiones:['Sesiones y documentos','Estado de las 14 mesas de trabajo'],
+  participantes:['Participantes por mesa','Integrantes de cada mesa de trabajo'],
+  cocreacion:['Mesas de co-creación','Mesas priorizadas, participantes por rol y metodología de 4 sesiones incrementales'],
+  recomendaciones:['Recomendaciones académicas','Comentarios de J.M. Sánchez Torres y su incorporación'],
+};
+const nav=document.getElementById('nav');
+const views=document.querySelectorAll('.view');
+let chartsBuilt={};
+nav.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const v=b.dataset.view;
+  nav.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  views.forEach(s=>s.classList.toggle('active',s.id===v));
+  document.getElementById('viewTitle').textContent=TITLES[v][0];
+  document.getElementById('viewSub').textContent=TITLES[v][1];
+  document.getElementById('aside').classList.remove('open');
+  window.scrollTo({top:0,behavior:'smooth'});
+  buildCharts(v);
+});
+document.getElementById('menuBtn').onclick=()=>document.getElementById('aside').classList.toggle('open');
+
+/* ============================================================
+   GRÁFICOS (Chart.js)
+   ============================================================ */
+const C={verde:'#1f4037',dorado:'#b89347',naranja:'#e8933f',mesa:'#0f8c82',azul:'#2962ff',
+  teal:'#13837a',control:'#e8591c',socio:'#17a06a',rojo:'#c0392b',gris:'#c5ccc8',pur:'#6b4fa0'};
+Chart.defaults.font.family="Segoe UI, Arial";
+Chart.defaults.color='#55615b';
+
+function buildCharts(view){
+  if(chartsBuilt[view])return; chartsBuilt[view]=true;
+
+  if(view==='overview'){
+    new Chart(document.getElementById('chDocs'),{
+      type:'doughnut',
+      data:{labels:['Entregados','Pendientes'],datasets:[{data:[11,3],backgroundColor:[C.socio,C.naranja],borderWidth:0}]},
+      options:{plugins:{legend:{position:'bottom'}},cutout:'62%'}
+    });
+    new Chart(document.getElementById('chRadar'),{
+      type:'radar',
+      data:{labels:['Estrategia','Técnica','Ética','Ambiental','Jurídico','Territorial'],
+        datasets:[{label:'Cobertura del modelo',data:[9,8,9,7,8,9],
+          backgroundColor:'rgba(15,140,130,.25)',borderColor:C.mesa,pointBackgroundColor:C.dorado}]},
+      options:{plugins:{legend:{display:false}},scales:{r:{min:0,max:10,ticks:{stepSize:2,backdropColor:'transparent'}}}}
+    });
+  }
+  if(view==='riesgo'){
+    new Chart(document.getElementById('chRisk'),{
+      type:'bar',
+      data:{labels:['Bajo','Medio','Alto','Inaceptable'],
+        datasets:[{label:'Iniciativas (ilustrativo)',data:[18,11,6,1],
+          backgroundColor:[C.socio,C.naranja,C.rojo,'#7a1414'],borderRadius:6}]},
+      options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+    });
+  }
+  if(view==='sesiones'){
+    new Chart(document.getElementById('chStatus'),{
+      type:'pie',
+      data:{labels:['Entregado','Pendiente'],datasets:[{data:[11,3],backgroundColor:[C.socio,C.naranja],borderWidth:0}]},
+      options:{plugins:{legend:{position:'bottom'}}}
+    });
+    const done=MESAS.filter(m=>m[2]&&m[3]&&m[4]&&m[5]).length;
+    new Chart(document.getElementById('chSessions'),{
+      type:'bar',
+      data:{labels:['S1–S4 completas','Incompletas'],
+        datasets:[{data:[done,14-done],backgroundColor:[C.mesa,C.gris],borderRadius:6}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:14}}}
+    });
+  }
+  if(view==='participantes'){
+    new Chart(document.getElementById('chPart'),{
+      type:'bar',
+      data:{labels:MESAS.map(m=>'Mesa '+m[0]),
+        datasets:[{label:'Participantes',data:MESAS.map(m=>nParticipantes(m[0])),
+          backgroundColor:C.mesa,borderRadius:5}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}
+    });
+    new Chart(document.getElementById('chRol'),{
+      type:'doughnut',
+      data:{labels:ROLES.map(r=>r[0]),
+        datasets:[{data:ROLES.map(r=>r[1]),
+          backgroundColor:[C.teal,C.azul,C.socio,C.control,C.pur,C.dorado],borderWidth:0}]},
+      options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}}},cutout:'55%'}
+    });
+  }
+}
+buildCharts('overview');
+
+/* ============================================================
+   SIMULADOR DE OPERACIÓN
+   ============================================================ */
+const ACTORCOLOR={'Facultad':'#2962ff','Sede':'#13837a','Mesa Técnica':'#0f8c82','CNED':'#0e2340','Jurídico/Control':'#e8591c','Operación':'#6b4fa0'};
+const RISKCLASS={'Bajo':'rb-bajo','Medio':'rb-medio','Alto':'rb-alto','Inaceptable':'rb-inaceptable'};
+
+// pesos base por tipo de sistema de IA
+const TYPEBASE={admin:3, aula:1, inv:2, propia:2, genai:3, agentica:4};
+const TYPELABEL={admin:'Decisión académico-administrativa',aula:'IA en el aula',inv:'IA en investigación/extensión',propia:'IA desarrollada en la UNAL',genai:'IA generativa de terceros',agentica:'IA agéntica'};
+
+function computeRisk(cfg){
+  let score=TYPEBASE[cfg.type];
+  if(cfg.data==='personal')score+=1;
+  if(cfg.data==='sensible')score+=2;
+  if(cfg.scope==='multi')score+=1;
+  if(cfg.scope==='unal')score+=2;
+  // administrativo con datos sensibles y alcance institucional puede ser inaceptable
+  let level;
+  if(score>=8)level='Inaceptable';
+  else if(score>=6)level='Alto';
+  else if(score>=4)level='Medio';
+  else level='Bajo';
+  return {level,score};
+}
+
+// a quién corresponde autorizar según riesgo + subsidiariedad
+function decideAuthority(level,cfg){
+  if(level==='Inaceptable') return {node:'CNED', text:'rechazo / prohibición', verdict:'veto'};
+  if(level==='Alto') return {node:'CNED', text:'autorización de alto nivel con auditoría y veto', verdict:'escala'};
+  if(level==='Medio') return {node:'Sede', text:'autorización de sede con supervisión de la Mesa Técnica', verdict:'cond'};
+  return {node:'Facultad', text:'autorización local con registro', verdict:'ok'};
+}
+
+/* ------------------------------------------------------------
+   PROCEDIMIENTO INTERNO DE LOS 4 NÚCLEOS DE LA MESA TÉCNICA
+   Modela cómo interactúan los núcleos al procesar una iniciativa:
+   entra por el Estratégico, deriva en paralelo a Técnico y
+   Control (que se consultan entre sí), y el Socio-Ambiental
+   actúa como control ético transversal con capacidad de objeción.
+   Converge en un dictamen colegiado.
+   ------------------------------------------------------------ */
+const VD={fav:'<span class="verd vd-fav">Favorable</span>',cond:'<span class="verd vd-cond">Con salvaguardas</span>',obj:'<span class="verd vd-obj">Objeción</span>'};
+
+function computeNuclei(cfg,risk){
+  const high = (risk.level==='Alto'||risk.level==='Inaceptable');
+  const med  = (risk.level==='Medio');
+  const sens = (cfg.data==='sensible');
+  const pers = (cfg.data!=='publico');
+  const broad= (cfg.scope!=='local');
+  const admin= (cfg.type==='admin');
+  const genAg= (cfg.type==='genai'||cfg.type==='agentica');
+
+  // 1.1 Estratégico Misional — alineación misional y pertinencia
+  const n1v = admin&&high ? 'cond' : 'fav';
+  // 1.2 Técnico & Green — viabilidad técnica, HPC, huella
+  const n2v = (broad&&high) ? 'cond' : 'fav';
+  // 1.3 Control & Jurídico-Fiscal — legalidad, Habeas Data, RAEE, presupuesto
+  const n3v = (sens||genAg) ? (high?'obj':'cond') : 'fav';
+  // 1.4 Socio-Ambiental & Territorial — ética, derechos, territorio, salud mental
+  const n4v = risk.level==='Inaceptable' ? 'obj' : (high||(admin&&pers) ? 'cond' : 'fav');
+
+  const nuclei=[
+    {id:'1.1',name:'Estratégico Misional',role:'Alineación con misiones y pertinencia',color:'#2962ff',v:n1v,
+     note:'Verifica coherencia con docencia, investigación y extensión; soberanía epistémica.'},
+    {id:'1.2',name:'Técnico & Green Computing',role:'Viabilidad técnica, HPC y huella de carbono',color:'#13837a',v:n2v,
+     note:'Evalúa infraestructura, seguridad y eficiencia energética (marcos ambientales reconocidos — Rec. 7).'},
+    {id:'1.3',name:'Control & Jurídico-Fiscal',role:'Legalidad, Habeas Data, RAEE y presupuesto',color:'#e8591c',v:n3v,
+     note:'Revisa cumplimiento normativo, protección de datos y viabilidad fiscal.'},
+    {id:'1.4',name:'Socio-Ambiental & Territorial',role:'Ética, derechos, territorio y salud mental',color:'#17a06a',v:n4v,
+     note:'Control ético transversal; puede elevar salvaguardas o detonar objeción/veto.'},
+  ];
+
+  // interacciones (hand-offs) en la plenaria
+  const flow=[
+    'El caso se radica en la <b>Plenaria de Delegados</b> (D1–D4), que hace el análisis preliminar.',
+    'La plenaria <span class="ar">→</span> <b>traslada a trámite</b>: cada delegado lleva el caso a su núcleo.',
+    'En el trámite, <b>1.2 ↔ 1.3</b> se consultan (seguridad/infra ↔ datos/licencias).',
+    'Los delegados <span class="ar">→</span> regresan con la <b>ponencia</b> de cada núcleo.',
+    'La plenaria delibera con <b>quórum</b> y consolida el <b>dictamen colegiado</b>.'
+  ];
+
+  // dictamen colegiado consolidado
+  const anyObj = nuclei.some(n=>n.v==='obj');
+  const anyCond= nuclei.some(n=>n.v==='cond');
+  let dict;
+  if(risk.level==='Inaceptable'||anyObj&&risk.level==='Alto') dict={t:'Dictamen desfavorable / con objeción',s:'Al menos un núcleo objeta por riesgo a derechos; se recomienda no autorizar o escalar al CNED con veto.'};
+  else if(high) dict={t:'Dictamen favorable condicionado — elevar al CNED',s:'Riesgo alto: se consolida con salvaguardas y se eleva al CNED para autorización, auditoría y veto.'};
+  else if(anyCond||med) dict={t:'Dictamen favorable con salvaguardas',s:'Procede con medidas de mitigación; autorización en el nivel sede con supervisión de la Mesa.'};
+  else dict={t:'Dictamen favorable',s:'Sin objeciones; procede la autorización en el nivel local con registro en PLASI.'};
+
+  const vote = computeVote(nuclei);
+  return {nuclei,flow,dict,vote};
+}
+
+/* ------------------------------------------------------------
+   QUÓRUM Y VOTACIÓN DE LA PLENARIA
+   Cada delegado vota según el dictamen (ponencia) de su núcleo.
+   Quórum deliberatorio: >= 3 de 4 delegados.
+   Regla de decisión (jerárquica, por protección de derechos):
+     1) Objeción de 1.3 (jurídico) o 1.4 (socio-ambiental) por
+        riesgo a derechos → OBJECIÓN PREVALENTE (veto / escalar).
+     2) Cualquier otra objeción, o salvaguardas en mayoría →
+        FAVORABLE CON SALVAGUARDAS.
+     3) 4 favorables → FAVORABLE UNÁNIME.
+     4) Mayoría favorable sin objeciones → FAVORABLE POR MAYORÍA.
+   ------------------------------------------------------------ */
+const TOTAL_DELEGADOS=4, QUORUM_MIN=3;
+function computeVote(nuclei){
+  const present=TOTAL_DELEGADOS; // en la simulación los 4 asisten
+  const quorum = present>=QUORUM_MIN;
+  const fav = nuclei.filter(n=>n.v==='fav').length;
+  const cond= nuclei.filter(n=>n.v==='cond').length;
+  const obj = nuclei.filter(n=>n.v==='obj').length;
+  // objeción de núcleos con competencia de derechos (1.3 jurídico, 1.4 socio-ambiental)
+  const derechosObj = nuclei.some(n=>(n.id==='1.3'||n.id==='1.4') && n.v==='obj');
+
+  let result, rc, rule;
+  if(!quorum){
+    result='Sin quórum'; rc='q-no'; rule='No se alcanza el mínimo de 3 delegados; la sesión se aplaza.';
+  } else if(derechosObj){
+    result='Objeción prevalente — veto / escalar al CNED'; rc='q-obj';
+    rule='Una objeción de 1.3 (Jurídico) o 1.4 (Socio-Ambiental) por riesgo a derechos prevalece: no se autoriza en la Mesa y se eleva al CNED con veto.';
+  } else if(obj>0 || cond>fav){
+    result='Favorable con salvaguardas'; rc='q-cond';
+    rule='Hay reparos o mayoría con salvaguardas: se aprueba condicionado a medidas de mitigación y seguimiento.';
+  } else if(fav===TOTAL_DELEGADOS){
+    result='Favorable por unanimidad'; rc='q-fav';
+    rule='Los 4 delegados votan a favor: dictamen favorable unánime.';
+  } else {
+    result='Favorable por mayoría'; rc='q-fav';
+    rule='Mayoría a favor sin objeciones; se aprueba (con las salvaguardas puntuales que apliquen).';
+  }
+  return {present,quorum,fav,cond,obj,derechosObj,result,rc,rule};
+}
+
+function buildStages(cfg,risk,auth){
+  const esc = auth.node==='CNED';
+  const stages=[
+    {n:1,actor:'Facultad',title:'Propuesta y registro',
+      body:`La <b>${cfg.origin==='facultad'?'Facultad / Grupo':'Sede'}</b> propone «${cfg.name}» (${TYPELABEL[cfg.type]}) y la registra. Es el nivel más cercano al riesgo y al valor.`,
+      raci:['Facultad: R','Sede: C','Mesa Técnica: I']},
+    {n:2,actor:'Sede',title:'Capacidades habilitantes y contexto territorial',
+      body:`La <b>Sede</b> verifica capacidades habilitantes (conectividad, HPC, legitimidad — Rec. 10) y riesgos del contexto territorial. Corresponsabilidad con el nivel nacional.`,
+      raci:['Sede: C/A','Facultad: C']},
+    {n:3,actor:'Mesa Técnica',title:'Plenaria de delegados: análisis, trámite en núcleos y dictamen',
+      body:`La <b>Plenaria de Delegados</b> (uno por núcleo) analiza el caso, lo <b>traslada a trámite</b> a los 4 núcleos y, con sus ponencias, delibera un <b>dictamen colegiado</b>. Riesgo consolidado: <b>${risk.level}</b>; se inscribe en <b>PLASI</b>.`,
+      raci:['Plenaria: A','Mesa Técnica: R','Jurídico/Control: C','CNED: I'],
+      nuclei:computeNuclei(cfg,risk)},
+    {n:4,actor:auth.node==='CNED'?'CNED':(auth.node==='Sede'?'Sede':'Facultad'),
+      title:'Decisión por subsidiariedad',
+      body:`${esc?'El riesgo exige <b>escalar al CNED</b>: ':'Se resuelve en el nivel más cercano: '}<b>${auth.node}</b> da ${auth.text}.`,
+      raci:esc?['CNED: A','Mesa Técnica: C','Jurídico/Control: C']:(auth.node==='Sede'?['Sede: A','Mesa Técnica: C']:['Facultad: A'])},
+  ];
+  if(auth.verdict!=='veto'){
+    stages.push({n:5,actor:'Operación',title:'Despliegue, supervisión y auditoría',
+      body:`Despliegue con <b>supervisión continua</b> de la Mesa Técnica y Control. Posibilidad de <b>suspensión (veto)</b> si aparece riesgo a derechos.`,
+      raci:['Mesa Técnica: S','Jurídico/Control: S','Facultad: R']});
+  }
+  return stages;
+}
+
+const VERDICTS={
+  ok:{cls:'v-ok',h:'✅ Autorizada en el nivel local',p:'Riesgo bajo: la facultad autoriza y registra. Supervisión ligera de la Mesa Técnica.'},
+  cond:{cls:'v-cond',h:'🟠 Autorizada con condiciones (nivel sede)',p:'Riesgo medio: la sede autoriza con supervisión de la Mesa Técnica y medidas de mitigación.'},
+  escala:{cls:'v-escala',h:'🔵 Escalada al CNED (riesgo alto)',p:'Riesgo alto a derechos fundamentales: requiere autorización del CNED, auditoría previa/posterior y capacidad de veto.'},
+  veto:{cls:'v-veto',h:'⛔ No autorizada / vetada',p:'Riesgo inaceptable: la iniciativa vulnera derechos fundamentales y no puede desplegarse en su forma actual.'},
+};
+
+const SCENARIOS=[
+  {label:'Deserción estudiantil',name:'Predictor de deserción estudiantil',type:'admin',origin:'facultad',data:'sensible',scope:'unal'},
+  {label:'Tutor IA en aula',name:'Tutor generativo de apoyo en el aula',type:'aula',origin:'facultad',data:'publico',scope:'local'},
+  {label:'Asignación de becas',name:'Sistema de asignación de becas',type:'admin',origin:'sede',data:'sensible',scope:'multi'},
+  {label:'Agente autónomo investig.',name:'Agente autónomo de apoyo a investigación',type:'agentica',origin:'facultad',data:'personal',scope:'multi'},
+  {label:'Chatbot público',name:'Chatbot informativo público',type:'genai',origin:'sede',data:'publico',scope:'unal'},
+];
+
+let simStages=[], simIdx=-1;
+
+function readCfg(){
+  return {
+    name:document.getElementById('simName').value||'Iniciativa de IA',
+    type:document.getElementById('simType').value,
+    origin:document.getElementById('simOrigin').value,
+    data:document.getElementById('simData').value,
+    scope:document.getElementById('simScope').value,
+  };
+}
+
+function renderRiskBadge(level){
+  document.getElementById('simRiskOut').innerHTML=`<span class="riskbadge ${RISKCLASS[level]}">${level}</span>`;
+}
+
+function renderPipeline(reveal){
+  const pipe=document.getElementById('simPipe');
+  pipe.innerHTML=simStages.map((s,i)=>{
+    const state = i<reveal?'done':(i===reveal?'active':'');
+    const raci = s.raci.map(r=>{
+      const [a,v]=r.split(': ');
+      return `<span><i class="pill2 r-${v.includes('/')?v.split('/')[0][0]:v[0]}" style="background:${v==='R'?'#2962ff':v==='A'?'#c0392b':v==='C'||v==='C/A'?'#13837a':v==='S'?'#e8591c':'#7a7f88'}">${v}</i>${a}</span>`;
+    }).join('');
+    const nucleiHtml = (s.nuclei && (state==='active'||state==='done'))
+      ? renderNuclei(s.nuclei) : '';
+    return `<div class="stage ${state}">
+      <div class="ball">${i<reveal?'✓':s.n}</div>
+      <div class="body">
+        <h5>${s.title} <span class="actor" style="background:${ACTORCOLOR[s.actor]||'#555'}">${s.actor}</span></h5>
+        <p>${s.body}</p>
+        <div class="raci-mini">${raci}</div>
+        ${nucleiHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const VDMAP={fav:VD.fav,cond:VD.cond,obj:VD.obj};
+const VDFILL={fav:'#17a06a',cond:'#e8933f',obj:'#c0392b'};
+
+/* Posiciones de los nodos en el lienzo SVG (viewBox 0 0 480 360) */
+const NPOS={
+  entrada:{x:240,y:26},
+  plenaria:{x:240,y:104},
+  '1.1':{x:70,y:214},
+  '1.2':{x:184,y:214},
+  '1.3':{x:296,y:214},
+  '1.4':{x:410,y:214},
+  dictamen:{x:240,y:330}
+};
+/* Flechas con su "paso" de animación (step) */
+const NEDGES=[
+  {id:'e0',from:'entrada',to:'1.1',step:1,label:'ingresa',
+    tip:{t:'Recepción del caso',rows:['El caso/iniciativa registrado se radica en la <b>Plenaria de Delegados</b> de la Mesa Técnica, que hace el análisis preliminar y define el reparto a trámite.']}},
+  {id:'e1',from:'plenaria',to:'1.1',step:2,label:'traslada',
+    tip:{t:'Plenaria → Núcleo 1.1 · Traslado a trámite',rows:['El <b>delegado del Núcleo Estratégico Misional</b> lleva el caso a su núcleo para evaluar pertinencia misional y soberanía epistémica.']}},
+  {id:'e2',from:'plenaria',to:'1.2',step:2,label:'traslada',
+    tip:{t:'Plenaria → Núcleo 1.2 · Traslado a trámite',rows:['El <b>delegado del Núcleo Técnico & Green</b> lleva el caso para evaluar viabilidad técnica, infraestructura/HPC y huella de carbono.']}},
+  {id:'e3',from:'plenaria',to:'1.3',step:2,label:'traslada',
+    tip:{t:'Plenaria → Núcleo 1.3 · Traslado a trámite',rows:['El <b>delegado del Núcleo Control & Jurídico-Fiscal</b> lleva el caso para revisar legalidad, Habeas Data, RAEE y viabilidad presupuestal.']}},
+  {id:'e4',from:'plenaria',to:'1.4',step:2,label:'traslada',
+    tip:{t:'Plenaria → Núcleo 1.4 · Traslado a trámite',rows:['El <b>delegado del Núcleo Socio-Ambiental & Territorial</b> lleva el caso para analizar ética, derechos, territorio y salud mental.']}},
+  {id:'e5',from:'1.2',to:'1.3',step:3,label:'consulta',bi:true,
+    tip:{t:'🔁 Consulta entre trámites · 1.2 ↔ 1.3',rows:[
+      '<b style="color:#13837a">Delegado Técnico (1.2) → Control (1.3) pregunta:</b> ¿Es legal el tratamiento de estos datos? ¿La licencia del modelo/herramienta es compatible (software libre, propiedad intelectual)? ¿Hay presupuesto para la infraestructura?',
+      '<b style="color:#e8591c">Delegado Control (1.3) → Técnico (1.2) pregunta:</b> ¿Qué controles de ciberseguridad y cifrado hay? ¿Dónde se alojan los datos y cómo se garantiza Habeas Data? ¿El consumo energético y los RAEE son razonables?'
+    ]}},
+  {id:'e6',from:'1.1',to:'plenaria',step:4,label:'ponencia',
+    tip:{t:'Núcleo 1.1 → Plenaria · Regreso con ponencia',rows:['El delegado regresa a la plenaria con la ponencia de su núcleo (pertinencia misional).']}},
+  {id:'e7',from:'1.2',to:'plenaria',step:4,label:'ponencia',
+    tip:{t:'Núcleo 1.2 → Plenaria · Regreso con ponencia',rows:['El delegado regresa con la ponencia técnica y de sostenibilidad.']}},
+  {id:'e8',from:'1.3',to:'plenaria',step:4,label:'ponencia',
+    tip:{t:'Núcleo 1.3 → Plenaria · Regreso con ponencia',rows:['El delegado regresa con la ponencia jurídica-fiscal y de protección de datos.']}},
+  {id:'e9',from:'1.4',to:'plenaria',step:4,label:'ponencia',
+    tip:{t:'Núcleo 1.4 → Plenaria · Regreso con ponencia',rows:['El delegado regresa con la ponencia ético-territorial; puede proponer salvaguardas u objeción.']}},
+  {id:'e10',from:'plenaria',to:'dictamen',step:5,label:'dictamen',
+    tip:{t:'Deliberación en plenaria → Dictamen colegiado',rows:['Con quórum, los delegados deliberan y consolidan el <b>dictamen colegiado</b> que alimenta la decisión por subsidiariedad.']}},
+];
+const NSTEPACT={1:['plenaria'],2:['1.1','1.2','1.3','1.4'],3:[],4:['plenaria'],5:['dictamen']};
+
+const NSIZE={entrada:[112,34],plenaria:[150,44],'1.1':[104,40],'1.2':[104,40],'1.3':[104,40],'1.4':[104,40],dictamen:[150,38]};
+function nodeMarkup(key,label,color,sub){
+  const p=NPOS[key];const [w,h]=NSIZE[key]||[110,38];
+  const big = key==='plenaria';
+  return `<g class="dnode${big?' plen':''}" data-node="${key}" transform="translate(${p.x-w/2},${p.y-h/2})">
+    <rect width="${w}" height="${h}" rx="10" fill="#ffffff" stroke="${color}" stroke-width="${big?2.6:2}"/>
+    <rect class="nfill" width="${w}" height="${h}" rx="10" fill="${color}" opacity="0"/>
+    <text x="${w/2}" y="${sub?15:(h/2+4)}" text-anchor="middle" font-size="${big?12:10.5}" font-weight="800" fill="${color}" class="nlabel">${label}</text>
+    ${sub?`<text x="${w/2}" y="29" text-anchor="middle" font-size="8" fill="#55615b" class="nsub">${sub}</text>`:''}
+  </g>`;
+}
+function edgePath(e){
+  const a=NPOS[e.from],b=NPOS[e.to];
+  const [,ah]=NSIZE[e.from]||[0,38];const [,bh]=NSIZE[e.to]||[0,38];
+  const down = b.y>a.y;
+  const ay = a.y + (down? ah/2 : -ah/2);
+  const by = b.y + (down? -bh/2 : bh/2);
+  // ligero desplazamiento lateral para que ida/regreso no se solapen
+  const sideShift = (e.step===4)?10:(e.step===2?-6:0);
+  const mx=(a.x+b.x)/2 + sideShift, my=(ay+by)/2;
+  return `M ${a.x+ (e.step===4?10:0)} ${ay} Q ${mx} ${my} ${b.x + (e.step===4?-10:0)} ${by}`;
+}
+
+function renderNuclei(nx){
+  const map={}; nx.nuclei.forEach(n=>map[n.id]=n);
+  // SVG
+  const edges=NEDGES.map(e=>{
+    const d=edgePath(e);
+    const hit=`<path class="dedge-hit${e.bi?' bi':''}" data-edge="${e.id}" d="${d}" fill="none" stroke="transparent" stroke-width="16" style="cursor:help"/>`;
+    return `<path class="dedge" data-edge="${e.id}" data-step="${e.step}" d="${d}" fill="none"
+            stroke="#c5ccc8" stroke-width="2.4" ${e.bi?'marker-start="url(#arrB)"':''} marker-end="url(#arr)"/>
+            <circle class="pulse" data-edge="${e.id}" r="4.5" fill="#b89347" opacity="0"><animateMotion dur="0.9s" begin="indefinite" path="${d}" /></circle>
+            ${hit}`;
+  }).join('');
+  const nodes=[
+    nodeMarkup('entrada','Caso / Iniciativa','#0e2340'),
+    nodeMarkup('plenaria','PLENARIA DE DELEGADOS','#0f8c82','D1 · D2 · D3 · D4 (uno por núcleo)'),
+    nodeMarkup('1.1','1.1 Estratégico','#2962ff','pertinencia'),
+    nodeMarkup('1.2','1.2 Técnico/Green','#13837a','infra · huella'),
+    nodeMarkup('1.3','1.3 Control/Jur.','#e8591c','legal · datos'),
+    nodeMarkup('1.4','1.4 Socio-Amb.','#17a06a','ética · derechos'),
+    nodeMarkup('dictamen','Dictamen colegiado','#b89347'),
+  ].join('');
+
+  // tarjetas de dictamen por núcleo
+  const cards=nx.nuclei.map((n,i)=>
+    `<div class="nuc" data-nuc="${n.id}" style="border-left-color:${n.color}">
+       <span class="seq">D${i+1}</span>
+       <h6 style="color:${n.color}">Delegado · ${n.id} ${n.name}</h6>
+       <div class="role">Ponencia: ${n.role}</div>
+       ${VDMAP[n.v]}
+     </div>`).join('');
+
+  return `<div class="nuclei-box">
+    <div class="nb-title">🔬 Procedimiento interno — 4 Núcleos de la Mesa Técnica</div>
+    <div class="nb-sub">Flujo de trabajo e interacción entre núcleos · pasa el mouse sobre las flechas (en especial <b style="color:var(--mesa)">1.2 ↔ 1.3</b>) para ver el detalle de la consulta · <button class="nreplay" id="nReplay">▶ Reproducir animación</button></div>
+    <div class="ndiagram-wrap">
+      <div class="ntip" id="nTip"></div>
+      <svg viewBox="0 0 480 360" class="ndiagram" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#9aa39d"/></marker>
+          <marker id="arrB" markerWidth="9" markerHeight="9" refX="2" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#9aa39d"/></marker>
+        </defs>
+        ${edges}
+        ${nodes}
+      </svg>
+      <div class="nstep-cap" id="nStepCap">Flujo listo — pulsa reproducir</div>
+    </div>
+    <div class="nuclei-grid">${cards}</div>
+    ${renderVote(nx.vote)}
+    <div class="nuclei-dictamen">🏛 <b>${nx.dict.t}:</b> ${nx.dict.s}</div>
+  </div>`;
+}
+
+/* Panel de quórum y votación de la plenaria */
+function renderVote(v){
+  if(!v)return'';
+  const tot=TOTAL_DELEGADOS;
+  const seg=(n,cls)=> n>0?`<div class="vb-seg ${cls}" style="flex:${n}">${n}</div>`:'';
+  return `<div class="vote-box">
+    <div class="vote-head">
+      <span class="vote-title">🗳️ Votación de la plenaria</span>
+      <span class="quorum ${v.quorum?'q-ok':'q-bad'}">Quórum ${v.present}/${tot} · ${v.quorum?'válido ✔ (mín. '+QUORUM_MIN+')':'insuficiente ✘'}</span>
+    </div>
+    <div class="vote-bar">${seg(v.fav,'s-fav')}${seg(v.cond,'s-cond')}${seg(v.obj,'s-obj')}</div>
+    <div class="vote-legend">
+      <span><i class="vdot s-fav"></i> A favor: <b>${v.fav}</b></span>
+      <span><i class="vdot s-cond"></i> Con salvaguardas: <b>${v.cond}</b></span>
+      <span><i class="vdot s-obj"></i> Objeción: <b>${v.obj}</b></span>
+    </div>
+    <div class="vote-result ${v.rc}"><b>Resultado:</b> ${v.result}</div>
+    <div class="vote-rule"><b>Regla aplicada:</b> ${v.rule}</div>
+  </div>`;
+}
+
+/* Controlador de animación del flujo entre núcleos */
+let nAnimTimers=[];
+const NSTEPTEXT={
+  1:'① El caso se radica en la Plenaria de Delegados, que hace el análisis preliminar.',
+  2:'② La plenaria traslada el caso a trámite: cada delegado lo lleva a su núcleo (1.1–1.4).',
+  3:'③ Durante el trámite, 1.2 ↔ 1.3 se consultan (seguridad/infra ↔ datos/licencias).',
+  4:'④ Los delegados regresan a la plenaria con la ponencia de cada núcleo.',
+  5:'⑤ La plenaria delibera con quórum y consolida el dictamen colegiado.',
+  6:'✓ Dictamen emitido — cada núcleo muestra el veredicto de su ponencia.'
+};
+function clearNAnim(){nAnimTimers.forEach(t=>clearTimeout(t));nAnimTimers=[];}
+
+function playNucleiAnim(nx){
+  const svg=document.querySelector('.ndiagram'); if(!svg)return;
+  clearNAnim();
+  // reset
+  svg.querySelectorAll('.dnode').forEach(n=>{n.classList.remove('on');n.querySelector('.nfill').setAttribute('opacity','0');});
+  svg.querySelectorAll('.dedge').forEach(e=>{e.setAttribute('stroke','#c5ccc8');e.classList.remove('on');});
+  document.querySelectorAll('.nuc').forEach(c=>c.classList.remove('show'));
+  const cap=document.getElementById('nStepCap');
+  const map={}; nx.nuclei.forEach(n=>map[n.id]=n);
+
+  const STEP=1050;
+  for(let step=1;step<=5;step++){
+    nAnimTimers.push(setTimeout(()=>{
+      if(cap)cap.textContent=NSTEPTEXT[step];
+      // encender flechas de este paso + lanzar pulso
+      svg.querySelectorAll(`.dedge[data-step="${step}"]`).forEach(e=>{
+        e.setAttribute('stroke','#b89347');e.classList.add('on');
+      });
+      svg.querySelectorAll(`.pulse[data-edge]`).forEach(p=>{
+        const ed=p.getAttribute('data-edge');
+        const edge=svg.querySelector(`.dedge[data-edge="${ed}"]`);
+        if(edge&&+edge.getAttribute('data-step')===step){
+          p.setAttribute('opacity','1');
+          const am=p.querySelector('animateMotion'); if(am&&am.beginElement)am.beginElement();
+          setTimeout(()=>p.setAttribute('opacity','0'),900);
+        }
+      });
+      // encender nodos activos de este paso
+      (NSTEPACT[step]||[]).forEach(k=>{
+        const g=svg.querySelector(`.dnode[data-node="${k}"]`);
+        if(g){g.classList.add('on');
+          const n=map[k];
+          g.querySelector('.nfill').setAttribute('opacity', n?'0.14':'0.10');
+        }
+      });
+    },step*STEP));
+  }
+  // paso final: pintar cada nodo con el color de su veredicto + revelar tarjetas
+  nAnimTimers.push(setTimeout(()=>{
+    if(cap)cap.textContent=NSTEPTEXT[6];
+    nx.nuclei.forEach(n=>{
+      const g=svg.querySelector(`.dnode[data-node="${n.id}"]`);
+      if(g){const f=g.querySelector('.nfill');f.setAttribute('fill',VDFILL[n.v]);f.setAttribute('opacity','0.9');
+        g.querySelector('.nlabel').setAttribute('fill','#fff');
+        const sub=g.querySelector('.nsub'); if(sub)sub.setAttribute('fill','rgba(255,255,255,.85)');
+      }
+    });
+    document.querySelectorAll('.nuc').forEach((c,i)=>{
+      nAnimTimers.push(setTimeout(()=>c.classList.add('show'), i*130));
+    });
+  },6*STEP));
+}
+
+function renderVerdict(show,auth){
+  const el=document.getElementById('simVerdict');
+  if(!show){el.innerHTML='';return;}
+  const v=VERDICTS[auth.verdict];
+  el.innerHTML=`<div class="verdict ${v.cls}"><h4>${v.h}</h4><p>${v.p}</p></div>`;
+}
+
+function prepareSim(){
+  const cfg=readCfg();
+  const risk=computeRisk(cfg);
+  const auth=decideAuthority(risk.level,cfg);
+  simStages=buildStages(cfg,risk,auth);
+  simIdx=-1;
+  renderRiskBadge(risk.level);
+  return {cfg,risk,auth};
+}
+
+let lastAuth=null;
+// localiza la etapa 3 (con núcleos) y, si está visible, dispara la animación del flujo
+function maybeAnimateNuclei(){
+  const stage3=simStages.find(s=>s.nuclei);
+  if(!stage3)return;
+  const idx=simStages.indexOf(stage3);
+  const visible = idx<simIdx || idx===simIdx; // done o active
+  if(!visible)return;
+  if(!document.querySelector('.ndiagram'))return;
+  const replay=document.getElementById('nReplay');
+  if(replay)replay.onclick=()=>playNucleiAnim(stage3.nuclei);
+  wireNucleiTooltips();
+  // pequeño retardo para que el DOM esté listo
+  clearNAnim();
+  nAnimTimers.push(setTimeout(()=>playNucleiAnim(stage3.nuclei),200));
+}
+
+/* Tooltips al pasar el mouse sobre las flechas del diagrama */
+function wireNucleiTooltips(){
+  const wrap=document.querySelector('.ndiagram-wrap');
+  const svg=document.querySelector('.ndiagram');
+  const tip=document.getElementById('nTip');
+  if(!wrap||!svg||!tip)return;
+  const EMAP={}; NEDGES.forEach(e=>EMAP[e.id]=e);
+  svg.querySelectorAll('.dedge-hit').forEach(hit=>{
+    const id=hit.getAttribute('data-edge');
+    const e=EMAP[id]; if(!e||!e.tip)return;
+    const edge=svg.querySelector(`.dedge[data-edge="${id}"]`);
+    const show=(ev)=>{
+      tip.innerHTML=`<span class="tt">${e.tip.t}</span>`+e.tip.rows.map(r=>`<div class="trow">${r}</div>`).join('');
+      tip.classList.add('show');
+      if(edge)edge.classList.add('hover');
+      positionTip(ev);
+    };
+    const positionTip=(ev)=>{
+      const wr=wrap.getBoundingClientRect();
+      let x=ev.clientX-wr.left+14, y=ev.clientY-wr.top+14;
+      // evitar desbordes
+      const tw=tip.offsetWidth||260, th=tip.offsetHeight||80;
+      if(x+tw>wr.width) x=wr.width-tw-8;
+      if(x<4)x=4;
+      if(y+th>wr.height) y=ev.clientY-wr.top-th-10;
+      if(y<4)y=4;
+      tip.style.left=x+'px'; tip.style.top=y+'px';
+    };
+    hit.addEventListener('mouseenter',show);
+    hit.addEventListener('mousemove',positionTip);
+    hit.addEventListener('mouseleave',()=>{tip.classList.remove('show');if(edge)edge.classList.remove('hover');});
+    // soporte táctil: tap muestra/oculta
+    hit.addEventListener('click',ev=>{ if(tip.classList.contains('show')&&edge&&edge.classList.contains('hover')){tip.classList.remove('show');edge.classList.remove('hover');} else show(ev); });
+  });
+}
+function runFull(){
+  clearNAnim();
+  const {auth}=prepareSim(); lastAuth=auth;
+  simIdx=simStages.length;
+  renderPipeline(simStages.length);
+  renderVerdict(true,auth);
+  document.getElementById('simStep').disabled=true;
+  maybeAnimateNuclei();
+}
+function stepOne(){
+  if(simIdx<0){const {auth}=prepareSim();lastAuth=auth;simIdx=0;renderPipeline(0);renderVerdict(false,auth);return;}
+  simIdx++;
+  if(simIdx>=simStages.length){renderPipeline(simStages.length);renderVerdict(true,lastAuth);document.getElementById('simStep').disabled=true;maybeAnimateNuclei();return;}
+  renderPipeline(simIdx);
+  maybeAnimateNuclei();
+}
+function resetSim(){
+  clearNAnim();
+  simStages=[];simIdx=-1;
+  document.getElementById('simPipe').innerHTML='<p style="color:var(--txt2);font-size:13px;padding:10px 0;">Configura la iniciativa y pulsa <b>Simular</b> o <b>Paso a paso</b>.</p>';
+  document.getElementById('simVerdict').innerHTML='';
+  document.getElementById('simRiskOut').innerHTML='<span class="riskbadge rb-medio">—</span>';
+  document.getElementById('simStep').disabled=false;
+}
+
+document.getElementById('simRun').onclick=runFull;
+document.getElementById('simStep').onclick=stepOne;
+document.getElementById('simReset').onclick=resetSim;
+
+// escenarios de ejemplo
+document.getElementById('simScenarios').innerHTML=SCENARIOS.map((s,i)=>`<button data-sc="${i}">${s.label}</button>`).join('');
+document.getElementById('simScenarios').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const s=SCENARIOS[+b.dataset.sc];
+  document.getElementById('simName').value=s.name;
+  document.getElementById('simType').value=s.type;
+  document.getElementById('simOrigin').value=s.origin;
+  document.getElementById('simData').value=s.data;
+  document.getElementById('simScope').value=s.scope;
+  runFull();
+});
+
+resetSim();
+</script>
+</body>
+</html>

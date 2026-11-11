@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gemelo Digital 3D · Gobernanza de la IA en la UNAL — Mesa Técnica de IA</title>
+<style>
+  :root{
+    --verde-unal:#1f4037;      /* verde institucional oscuro */
+    --verde-prof:#132a24;
+    --dorado:#b89347;
+    --naranja:#e8933f;
+    --azul:#2962ff;
+    --teal:#13837a;
+    --control:#e8591c;
+    --socio:#17a06a;
+    --crema:#f4f1e9;
+    --mesa:#0f8c82;
+    --cned:#0e2340;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--verde-prof);color:#fff;}
+  #scene{position:fixed;inset:0;z-index:0;}
+
+  /* ---------- Encabezado ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    padding:14px 22px;
+    background:linear-gradient(90deg,rgba(15,42,36,.96),rgba(31,64,55,.80));
+    border-bottom:3px solid var(--dorado);
+    display:flex;align-items:center;gap:16px;
+    backdrop-filter:blur(4px);
+  }
+  header .crest{
+    width:42px;height:42px;flex:0 0 auto;border-radius:6px;
+    background:var(--verde-unal);border:1.5px solid var(--dorado);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--dorado);font-size:11px;letter-spacing:1px;
+  }
+  header h1{font-size:17px;font-weight:700;line-height:1.2;}
+  header h1 span{color:var(--dorado);}
+  header p{font-size:11.5px;opacity:.75;margin-top:2px;}
+  .orange-strip{position:fixed;bottom:0;left:0;right:0;height:6px;background:var(--naranja);z-index:10;}
+
+  /* ---------- Panel de info ---------- */
+  #panel{
+    position:fixed;top:84px;right:18px;z-index:10;width:330px;max-width:calc(100vw - 36px);
+    background:rgba(19,42,36,.94);border:1px solid rgba(184,147,71,.5);border-radius:14px;
+    padding:0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);
+    transition:transform .35s ease,opacity .35s ease;
+  }
+  #panel.hidden{transform:translateX(380px);opacity:0;pointer-events:none;}
+  #panel .ph{padding:14px 16px;color:#fff;}
+  #panel .ph .kicker{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;opacity:.85;}
+  #panel .ph h2{font-size:18px;margin-top:4px;line-height:1.2;}
+  #panel .pb{padding:14px 16px;background:rgba(244,241,233,.06);max-height:48vh;overflow:auto;}
+  #panel .pb h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin:12px 0 6px;}
+  #panel .pb h3:first-child{margin-top:0;}
+  #panel .pb ul{list-style:none;}
+  #panel .pb li{font-size:13px;line-height:1.5;padding-left:16px;position:relative;margin-bottom:5px;opacity:.95;}
+  #panel .pb li::before{content:"▸";position:absolute;left:0;color:var(--dorado);}
+  #panel .pb .tag{display:inline-block;font-size:11px;font-style:italic;opacity:.8;margin-top:8px;border-left:3px solid var(--dorado);padding-left:8px;}
+  #closePanel{position:absolute;top:10px;right:12px;cursor:pointer;background:none;border:none;color:#fff;font-size:20px;opacity:.7;}
+  #closePanel:hover{opacity:1;}
+
+  /* ---------- Leyenda / controles ---------- */
+  #legend{
+    position:fixed;bottom:20px;left:18px;z-index:10;
+    background:rgba(19,42,36,.88);border:1px solid rgba(184,147,71,.4);border-radius:12px;
+    padding:12px 14px;font-size:12px;max-width:300px;
+  }
+  #legend h4{font-size:11px;letter-spacing:1.5px;color:var(--dorado);text-transform:uppercase;margin-bottom:8px;}
+  #legend .row{display:flex;align-items:center;gap:8px;margin-bottom:5px;line-height:1.3;}
+  #legend .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
+  #legend .hint{margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.12);opacity:.7;font-size:11px;line-height:1.4;}
+
+  /* ---------- Botones vista ---------- */
+  #toolbar{position:fixed;top:84px;left:18px;z-index:10;display:flex;flex-direction:column;gap:8px;}
+  #toolbar button{
+    background:rgba(19,42,36,.9);color:#fff;border:1px solid rgba(184,147,71,.45);
+    border-radius:9px;padding:9px 12px;font-size:12.5px;cursor:pointer;text-align:left;transition:.2s;min-width:168px;
+  }
+  #toolbar button:hover{background:var(--dorado);color:var(--verde-prof);border-color:var(--dorado);}
+  #toolbar button.active{background:var(--dorado);color:var(--verde-prof);}
+
+  #loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:var(--verde-prof);flex-direction:column;gap:14px;}
+  #loading .ring{width:46px;height:46px;border:4px solid rgba(184,147,71,.25);border-top-color:var(--dorado);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loading p{opacity:.8;font-size:13px;}
+
+  /* ---------- Overlay documental (RACI, taxonomía, arquitectura, recomendaciones) ---------- */
+  #overlay{
+    position:fixed;inset:0;z-index:30;display:none;
+    background:rgba(10,24,20,.90);backdrop-filter:blur(5px);
+    overflow:auto;padding:70px 20px 40px;
+  }
+  #overlay.show{display:block;}
+  #overlay .wrap{max-width:1080px;margin:0 auto;}
+  #overlay .ohead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:2px solid var(--dorado);padding-bottom:14px;margin-bottom:22px;}
+  #overlay .ohead h2{font-size:24px;line-height:1.2;}
+  #overlay .ohead .k{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);display:block;margin-bottom:6px;}
+  #overlay .ohead p{font-size:13px;opacity:.8;margin-top:8px;max-width:760px;line-height:1.5;}
+  #overlay .ox{flex:0 0 auto;cursor:pointer;background:var(--dorado);color:var(--verde-prof);border:none;border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;}
+  #overlay table{width:100%;border-collapse:collapse;font-size:13px;background:rgba(244,241,233,.04);border-radius:10px;overflow:hidden;}
+  #overlay th,#overlay td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);vertical-align:top;line-height:1.4;}
+  #overlay th{background:var(--cned);color:#fff;font-size:11px;letter-spacing:1px;text-transform:uppercase;position:sticky;top:0;}
+  #overlay td:first-child{font-weight:600;}
+  #overlay .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff;}
+  .r-A{background:#c0392b}.r-R{background:#2962ff}.r-C{background:#13837a}.r-I{background:#7a7f88}.r-S{background:#e8591c}.r-V{background:#6c3fb0}
+  #overlay .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  #overlay .card{background:rgba(244,241,233,.05);border:1px solid rgba(184,147,71,.3);border-left-width:5px;border-radius:10px;padding:14px;}
+  #overlay .card h3{font-size:15px;margin-bottom:4px;}
+  #overlay .card .lvl{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--dorado);}
+  #overlay .card ul{list-style:none;margin-top:8px;}
+  #overlay .card li{font-size:12.5px;line-height:1.5;padding-left:14px;position:relative;margin-bottom:4px;opacity:.95;}
+  #overlay .card li::before{content:"–";position:absolute;left:0;color:var(--dorado);}
+  #overlay .legend-inline{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;font-size:12px;}
+  #overlay .legend-inline span{display:inline-flex;align-items:center;gap:6px;}
+  #overlay .note{font-size:12px;opacity:.75;font-style:italic;margin-top:18px;border-left:3px solid var(--dorado);padding-left:10px;line-height:1.5;}
+  #overlay .risk-row{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-bottom:10px;}
+  #overlay .risk-bar{height:34px;border-radius:7px;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:12px;color:#fff;}
+  #overlay .rec-item{background:rgba(244,241,233,.05);border-radius:9px;padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--dorado);}
+  #overlay .rec-item b{color:#fff;}
+  #overlay .rec-item .how{display:block;font-size:12.5px;opacity:.85;margin-top:5px;}
+  #overlay .rec-item .how::before{content:"→ ";color:var(--dorado);font-weight:700;}
+
+  @media(max-width:720px){
+    #panel{top:unset;bottom:36px;right:10px;left:10px;width:auto;}
+    #toolbar{flex-direction:row;flex-wrap:wrap;max-width:calc(100vw - 36px);}
+    #toolbar button{min-width:unset;}
+    #legend{display:none;}
+    header h1{font-size:14px;}
+  }
+</style>
+</head>
+<body>
+<div id="loading"><div class="ring"></div><p>Cargando gemelo digital 3D…</p></div>
+
+<header>
+  <div class="crest">UNAL</div>
+  <div>
+    <h1>Gemelo Digital 3D · <span>Gobernanza de la IA en la UNAL</span></h1>
+    <p>Centrado en la Mesa Técnica de IA — Sala Adscrita al CNED · DNED–DIVULAB</p>
+  </div>
+</header>
+
+<div id="toolbar">
+  <button data-view="orbit" class="active">◉ Vista orbital</button>
+  <button data-view="top">▣ Vista cenital</button>
+  <button data-view="mesa">◎ Enfocar Mesa Técnica</button>
+  <button data-view="benchmark">🛰 Modelos de referencia</button>
+  <button data-view="timeline">📅 Línea de tiempo 2025–2027</button>
+  <button data-overlay="arquitectura">🏛 Arquitectura de decisiones</button>
+  <button data-overlay="raci">🧭 Matriz RACI por riesgo</button>
+  <button data-overlay="taxonomia">🧩 Tipos de IA y riesgo</button>
+  <button data-overlay="corporativo">⊚ Gobernanza corporativa</button>
+  <button data-overlay="recomendaciones">📝 Recomendaciones aplicadas</button>
+  <button data-view="toggleSat">👁 Satélites: ON</button>
+  <button data-view="toggleRotate">⏸ Pausar giro</button>
+</div>
+
+<div id="legend">
+  <h4>Modelo multinivel</h4>
+  <div class="row"><span class="dot" style="background:#2a4c7a"></span> CNED — Definición política</div>
+  <div class="row"><span class="dot" style="background:#0f8c82"></span> Mesa Técnica de IA — Ejecución</div>
+  <div class="row"><span class="dot" style="background:#2962ff"></span> Núcleo Estratégico Misional</div>
+  <div class="row"><span class="dot" style="background:#13837a"></span> Núcleo Técnico &amp; Green Computing</div>
+  <div class="row"><span class="dot" style="background:#e8591c"></span> Núcleo Control &amp; Jurídico-Fiscal</div>
+  <div class="row"><span class="dot" style="background:#17a06a"></span> Núcleo Socio-Ambiental &amp; Territorial</div>
+  <div class="row"><span class="dot" style="background:#1f4037;border:1px solid #b89347"></span> Comunidad Universitaria</div>
+  <div class="row"><span class="dot" style="background:#6b4fa0;border:1px solid #c3a8f0"></span> Capacidades Habilitantes &amp; Legitimidad</div>
+  <div class="row"><span class="dot" style="background:#3a5a7a"></span> Órbita Norte Global (MIT · UCLA · Stanford)</div>
+  <div class="row"><span class="dot" style="background:#2e8b57"></span> Órbita Sur Global (Tec · USP · UNAM · INTEGRITY-AI)</div>
+  <div class="hint">🖱️ Arrastra para rotar · rueda para zoom · <b>clic en un bloque o satélite</b> para ver su detalle. Los botones <b>🏛 🧭 🧩 ⊚ 📝</b> abren las vistas que incorporan las recomendaciones académicas.</div>
+</div>
+
+<div id="panel" class="hidden">
+  <button id="closePanel">×</button>
+  <div class="ph" id="panelHead"></div>
+  <div class="pb" id="panelBody"></div>
+</div>
+
+<div id="overlay">
+  <div class="wrap">
+    <div class="ohead">
+      <div>
+        <span class="k" id="ovKicker"></span>
+        <h2 id="ovTitle"></h2>
+        <p id="ovIntro"></p>
+      </div>
+      <button class="ox" id="ovClose">× Cerrar</button>
+    </div>
+    <div id="ovBody"></div>
+  </div>
+</div>
+
+<div id="scene"></div>
+<div class="orange-strip"></div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============================================================
+   DATOS DEL MODELO (extraídos de la propuesta DNED y la
+   presentación de Gobernanza IA UNAL)
+   ============================================================ */
+const DATA = {
+  cned:{
+    kicker:'Nivel 1 · Alto nivel',
+    title:'CNED — Comité Nacional de Estrategia Digital',
+    sections:[
+      {h:'Rol en el modelo', items:['Definición política de alto nivel','Aprobación normativa institucional']},
+      {h:'Relación', items:['La Mesa Técnica de IA es una Sala Adscrita al CNED']}
+    ],
+    tag:'Vértice de gobernanza estratégica'
+  },
+  mesa:{
+    kicker:'Nivel 2 · Ejecución',
+    title:'Mesa Técnica de Inteligencia Artificial',
+    sections:[
+      {h:'Sala adscrita al CNED', items:['Estrategia','Técnica','Evaluación','Auditoría','Acompañamiento']},
+      {h:'Mecanismos', items:['4 Núcleos funcionales','Ciclo de vida de modelos','PLASI (registro de modelos)','Co-creación universitaria','Ciclo trienal']}
+    ],
+    tag:'Ejecución, evaluación, auditoría y acompañamiento'
+  },
+  n1:{
+    kicker:'Núcleo 1.1',
+    title:'Núcleo Estratégico Misional',
+    sections:[
+      {h:'Composición', items:['Vicerrector General','Vicerrector Académico','Vicerrector de Investigación','Dir. Nacional Extensión y Propiedad Intelectual']},
+      {h:'Enfoque', items:['Coherencia misional','Pedagogía','Soberanía epistémica']}
+    ],
+    tag:'Coherencia misional, pedagogía, soberanía epistémica'
+  },
+  n2:{
+    kicker:'Núcleo 1.2',
+    title:'Núcleo Técnico & Green Computing',
+    sections:[
+      {h:'Composición', items:['Dir. Nacional Estrategia Digital','Coordinadores de Ciberseguridad','Admin. Centro de Datos / HPC','Representantes TI de Sedes']},
+      {h:'Enfoque', items:['Infraestructura','Directrices técnicas DT 1-25','Eficiencia energética']},
+      {h:'Medición ambiental (Rec. 7)', items:['Usar marcos reconocidos internacionalmente (no inventar indicadores)','Articular con prof. Carlos Moreno Mantilla','Oficina de Gestión Ambiental — sede Bogotá']}
+    ],
+    tag:'Infraestructura, DT 1-25, eficiencia energética · operación ≠ gobernanza (Rec. 10)'
+  },
+  n3:{
+    kicker:'Núcleo 1.3',
+    title:'Núcleo Control & Jurídico-Fiscal',
+    sections:[
+      {h:'Composición', items:['Dir. Nacional Planeación','Jefe Oficina Jurídica Nacional','Delegado Gestión Ambiental','Jefe de Control Interno']},
+      {h:'Enfoque', items:['Legalidad','RAEE','Habeas Data','Software libre']}
+    ],
+    tag:'Legalidad, RAEE, Habeas Data, software libre'
+  },
+  n4:{
+    kicker:'Núcleo 1.4',
+    title:'Núcleo Socio-Ambiental "Bilingüe" & Territorial',
+    sections:[
+      {h:'Composición', items:['Investigadores IA y sostenibilidad','Delegados facultades / grupos','Sedes de Presencia Nacional','Estudiantes, docentes, administrativos']},
+      {h:'Enfoque', items:['Lineamientos éticos','Saberes territoriales','Salud mental']}
+    ],
+    tag:'Lineamientos éticos, saberes territoriales, salud mental'
+  },
+  comunidad:{
+    kicker:'Nivel 3 · Base',
+    title:'Comunidad Universitaria',
+    sections:[
+      {h:'Actores', items:['Laboratorios vivos','9 Sedes','Facultades','Grupos de investigación']},
+      {h:'Principios', items:['Soberanía epistémica','Equidad territorial','Responsabilidad socio-ambiental']}
+    ],
+    tag:'Arquitectura participativa, multicampus y sostenible'
+  },
+
+  /* ---- Satélites: modelos de referencia internacionales (benchmarking) ---- */
+  mit:{
+    kicker:'Referencia · Descentralizado',
+    title:'MIT — Schwarzman College of Computing',
+    sections:[
+      {h:'Órganos', items:['SERC — Ética en software','Ad Hoc Committee — marcos regulatorios']},
+      {h:'Funciones clave', items:['Currículo bilingüe técnico + impacto social','Casuística abierta (OpenCourseWare)','Programa semilla IA hasta USD 100.000','Doctrina "Regulatory Fork in the Toaster"']},
+      {h:'Dimensión ambiental', items:['Medición del impacto del código','Financiación a proyectos eficientes']}
+    ],
+    tag:'Modelo descentralizado por núcleos de especialización'
+  },
+  ucla:{
+    kicker:'Referencia · Matricial-Centralizado',
+    title:'UCLA — UC System',
+    sections:[
+      {h:'Órganos', items:['Systemwide UC AI Council (UCOP)','UCLA AI Committee (núcleo central)','Health AI Council — HAIC']},
+      {h:'Funciones clave', items:['Evaluación de riesgo tecnológico','Supervisión clínica con veto (HIPAA)','9 principios de IA responsable','Filtrado de herramientas comerciales']},
+      {h:'Dimensión ambiental', items:['Criterios de eficiencia en centros de datos del sistema estatal']}
+    ],
+    tag:'Carácter mandatorio en ciberseguridad y entorno clínico'
+  },
+  stanford:{
+    kicker:'Referencia · Hub-and-Spoke',
+    title:'Stanford — Human-Centered AI (HAI)',
+    sections:[
+      {h:'Órganos', items:['Institute for Human-Centered AI (HAI)','AI at Stanford Advisory Committee (AISAC)','AIMES — AI Meets Education','AI Index Steering Committee']},
+      {h:'Funciones clave', items:['Reglas de oro (supervisión humana)','Integridad académica uso IA generativa','Reporte anual AI Index + huella de carbono','Stanford AI Playground (entorno seguro)']},
+      {h:'Dimensión ambiental', items:['Indicadores de CO₂e en el AI Index','Infraestructura compartida']}
+    ],
+    tag:'Enfoque orientador, pedagógico y de estímulo a la investigación'
+  },
+
+  /* ---- Referentes del Sur Global / Latinoamérica (Rec. 1 — J.M. Sánchez Torres) ---- */
+  tec:{
+    kicker:'Referente Sur Global · Multicampus',
+    title:'Tec de Monterrey (México)',
+    sections:[
+      {h:'Por qué es relevante', items:['IES multicampus latinoamericana','Lógica y punto de partida más cercanos a la UNAL']},
+      {h:'Aporte', items:['Marco de integridad académica con IA','Experiencia de despliegue en múltiples campus']}
+    ],
+    tag:'Rec. 1 — tec.mx/es/integridad-academica'
+  },
+  usp:{
+    kicker:'Referente Sur Global · Normativo',
+    title:'Universidad de São Paulo — USP (Brasil)',
+    sections:[
+      {h:'Por qué es relevante', items:['Mayor IES pública de América Latina','Instrumento normativo institucional reciente (Portaria GR 2026)']},
+      {h:'Aporte', items:['Ejemplo de regulación institucional de IA','Gobernanza en universidad pública multicampus']}
+    ],
+    tag:'Rec. 1 — Portaria GR nº 9004/2026'
+  },
+  unam:{
+    kicker:'Referente Sur Global · En construcción',
+    title:'UNAM (México)',
+    sections:[
+      {h:'Por qué es relevante', items:['Universidad pública nacional comparable a la UNAL','Primeros avances de gobernanza de IA']},
+      {h:'Aporte', items:['Repositorio institucional de lineamientos','Proceso incipiente observable como par']}
+    ],
+    tag:'Rec. 1 — repositorio.tic.unam.mx'
+  },
+  integrity:{
+    kicker:'Red colombiana / latinoamericana',
+    title:'Proyecto INTEGRITY-AI',
+    sections:[
+      {h:'Qué es', items:['"Integrating Ethical AI Governance for Responsibility, Innovation, and Transparency in Higher Education"','Red de universidades latinoamericanas']},
+      {h:'Pares colombianos', items:['Universidad del Cauca','Universidad de San Buenaventura']},
+      {h:'Aporte', items:['Referentes nacionales directos para la UNAL','Marco de gobernanza ética contextualizado']}
+    ],
+    tag:'Rec. 1 — referentes IES colombianas y latinoamericanas'
+  },
+
+  /* ---- Núcleo transversal: Capacidades Habilitantes & Legitimidad (Rec. 10) ---- */
+  habilitante:{
+    kicker:'Capa transversal · Rec. 10',
+    title:'Capacidades Habilitantes & Legitimidad Institucional',
+    sections:[
+      {h:'Problema que atiende', items:['Dificultades persistentes de seguridad, conectividad, red y obsolescencia','La gobernanza de IA no es sostenible sobre capacidades de TI insuficientes']},
+      {h:'Distinción clave', items:['Gobernanza de IA ≠ operación tecnológica','Competencia formal + capacidad efectiva + credibilidad + legitimidad']},
+      {h:'Mecanismos', items:['Capacidades habilitantes mínimas requeridas','Corresponsabilidad nivel nacional ↔ sedes ↔ facultades']}
+    ],
+    tag:'Rec. 10 — legitimidad y capacidades como prerrequisito'
+  }
+};
+
+/* ---- Línea de tiempo del plan de trabajo 2025–2027 ---- */
+const TIMELINE=[
+  {n:'1', t:'Diagnóstico', date:'2° sem. 2025', color:0x17a06a, items:['Análisis de resultados del taller Menti'], lead:'DNED'},
+  {n:'2', t:'Co-construcción', date:'Feb.–Sep. 2026', color:0x2962ff, items:['Taller focalizado (13 mesas de trabajo)','Co-creación universitaria'], lead:'DNED'},
+  {n:'3', t:'Validación', date:'Oct. 2026', color:0x8a4b2a, items:['Ajustes por validación externa','Diálogos participativos en sedes y facultades','Incorporación de comentarios'], lead:'DNED'},
+  {n:'4', t:'Revisión y aprobación', date:'Nov. 2026 – Feb. 2027', color:0x5a3d6e, items:['Revisión de áreas y revisión legal','Aprobación institucional'], lead:'Mesa Técnica de IA · GIIA-UNAL'},
+  {n:'5', t:'Implementación', date:'Mar.–Jun. 2027', color:0x4b3b8f, items:['Lanzamiento','Implementación','Evaluación y ajustes finales'], lead:'Mesa Técnica de IA · GIIA-UNAL'}
+];
+
+/* ============================================================
+   ESCENA THREE.JS
+   ============================================================ */
+const sceneEl = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x132a24);
+scene.fog = new THREE.Fog(0x132a24, 55, 120);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(0, 18, 42);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+sceneEl.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 14;
+controls.maxDistance = 85;
+controls.maxPolarAngle = Math.PI*0.49;
+controls.target.set(0,6,0);
+
+/* ----- Luces ----- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 1.1);
+key.position.set(18,34,22); key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.left=-40;key.shadow.camera.right=40;key.shadow.camera.top=40;key.shadow.camera.bottom=-40;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xb89347, 0.4);
+fill.position.set(-20,16,-10); scene.add(fill);
+
+/* ----- Suelo ----- */
+const groundGeo = new THREE.CircleGeometry(60,64);
+const groundMat = new THREE.MeshStandardMaterial({color:0x0e201b, roughness:1, metalness:0});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(120, 60, 0x244a40, 0x1a362f);
+grid.position.y = 0.02; scene.add(grid);
+
+/* ----- Utilidades ----- */
+const loader = new THREE.TextureLoader();
+const clickable = [];
+const labelSprites = [];
+
+function makeLabelTexture(text, sub, w=512, h=180){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,w,h);
+  // texto principal
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 42px Segoe UI, Arial';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  wrapText(ctx,text,w/2, sub? h/2-18 : h/2, w-40, 46);
+  if(sub){
+    ctx.fillStyle='#e9d8a8';
+    ctx.font='italic 26px Segoe UI, Arial';
+    ctx.fillText(sub, w/2, h/2+42);
+  }
+  const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;
+}
+function wrapText(ctx,text,x,y,maxW,lh){
+  const words=text.split(' ');let line='';const lines=[];
+  for(const w of words){const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=w+' ';}else line=test;}
+  lines.push(line);
+  const startY=y-(lines.length-1)*lh/2;
+  lines.forEach((l,i)=>ctx.fillText(l.trim(),x,startY+i*lh));
+}
+
+function addLabel(text, sub, x,y,z, scale=1){
+  const tex=makeLabelTexture(text,sub);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
+  const sp=new THREE.Sprite(mat);
+  sp.position.set(x,y,z);
+  sp.scale.set(8.4*scale,2.95*scale,1);
+  sp.renderOrder=999;
+  scene.add(sp);labelSprites.push(sp);
+  return sp;
+}
+
+/* Crea un bloque (prisma) con borde de color y lo registra como clickable */
+function makeBlock(opts){
+  const {w,h,d,x,y,z,color,edge,key} = opts;
+  const group=new THREE.Group();
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const mat=new THREE.MeshStandardMaterial({color,roughness:.45,metalness:.15,emissive:new THREE.Color(color).multiplyScalar(.12)});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  group.add(mesh);
+  // borde luminoso
+  const edges=new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:edge||0xffffff})
+  );
+  group.add(edges);
+  group.position.set(x,y,z);
+  group.userData={key, baseY:y, mesh, mat, baseColor:new THREE.Color(color)};
+  scene.add(group);
+  clickable.push(mesh);
+  mesh.userData.group=group;
+  return group;
+}
+
+/* Conector 3D entre dos puntos (tubo) */
+function connect(p1,p2,color=0xb89347,r=0.11){
+  const dir=new THREE.Vector3().subVectors(p2,p1);
+  const len=dir.length();
+  const geo=new THREE.CylinderGeometry(r,r,len,8);
+  const mat=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.4,roughness:.6});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.copy(p1).add(p2).multiplyScalar(.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  scene.add(mesh);
+  return mesh;
+}
+
+/* ============================================================
+   CONSTRUCCIÓN DEL GEMELO
+   ============================================================ */
+// Nivel 1 — CNED (cúspide)
+const cned = makeBlock({w:16,h:3.2,d:5,x:0,y:20,z:0,color:0x1b355b,edge:0x4f7fc9,key:'cned'});
+addLabel('CNED','Definición política · aprobación normativa',0,20,0,1.05);
+
+// Nivel 2 — Mesa Técnica (centro, destacada y más grande)
+const mesa = makeBlock({w:22,h:4,d:7,x:0,y:12.5,z:0,color:0x0f8c82,edge:0x5fd8cd,key:'mesa'});
+addLabel('MESA TÉCNICA DE IA','4 Núcleos · PLASI · Ciclo trienal',0,12.6,0,1.25);
+// halo dorado alrededor de la Mesa (anillo)
+const ring=new THREE.Mesh(
+  new THREE.TorusGeometry(15,0.18,12,80),
+  new THREE.MeshStandardMaterial({color:0xb89347,emissive:0xb89347,emissiveIntensity:.6})
+);
+ring.rotation.x=Math.PI/2;ring.position.y=12.5;scene.add(ring);
+
+// Nivel 3 — Los 4 núcleos (en cruz alrededor, nivel medio-bajo)
+const nucData=[
+  {key:'n1',color:0x2962ff,edge:0x7aa0ff,label:'Núcleo\nEstratégico Misional',pos:[-15,6,-9]},
+  {key:'n2',color:0x13837a,edge:0x4fd4c7,label:'Núcleo\nTécnico & Green Computing',pos:[15,6,-9]},
+  {key:'n3',color:0xe8591c,edge:0xffa06a,label:'Núcleo\nControl & Jurídico-Fiscal',pos:[-15,6,9]},
+  {key:'n4',color:0x17a06a,edge:0x5fe0a8,label:'Núcleo\nSocio-Ambiental & Territorial',pos:[15,6,9]},
+];
+const nucleos=[];
+nucData.forEach(n=>{
+  const b=makeBlock({w:11,h:5,d:5,x:n.pos[0],y:n.pos[1],z:n.pos[2],color:n.color,edge:n.edge,key:n.key});
+  addLabel(n.label.replace('\n',' '),null,n.pos[0],n.pos[1]+0.2,n.pos[2],0.92);
+  nucleos.push(b);
+});
+
+// Nivel 4 — Comunidad Universitaria (plataforma base ancha)
+const comunidad = makeBlock({w:46,h:1.8,d:30,x:0,y:1.3,z:0,color:0x1f4037,edge:0xb89347,key:'comunidad'});
+addLabel('COMUNIDAD UNIVERSITARIA','Laboratorios vivos · 9 Sedes · Facultades · Grupos',0,2.9,13.2,1.15);
+
+// Capa transversal — Capacidades Habilitantes & Legitimidad (Rec. 10)
+// pilar lateral que "sostiene" el modelo: prerrequisito de la gobernanza
+const habil = makeBlock({w:4.5,h:17,d:4.5,x:-27,y:9,z:0,color:0x6b4fa0,edge:0xc3a8f0,key:'habilitante'});
+addLabel('CAPACIDADES HABILITANTES','& Legitimidad institucional (Rec. 10)',-27,19.2,0,0.85);
+// conectores: la capa habilitante sostiene todos los niveles
+[ [0,20,0],[0,12.5,0],[0,1.3,0] ].forEach(p=>{
+  connect(new THREE.Vector3(-24.8,p[1],0), new THREE.Vector3(p[0]-9,p[1],p[2]), 0xc3a8f0, .06);
+});
+
+/* ----- Conectores jerárquicos ----- */
+connect(new THREE.Vector3(0,18.4,0), new THREE.Vector3(0,14.5,0), 0xb89347, .16); // CNED -> Mesa
+nucData.forEach(n=>{
+  connect(new THREE.Vector3(0,12.5,0), new THREE.Vector3(n.pos[0],n.pos[1]+1.5,n.pos[2]), 0x5fd8cd, .09); // Mesa -> núcleo
+  connect(new THREE.Vector3(n.pos[0],n.pos[1]-2.5,n.pos[2]), new THREE.Vector3(n.pos[0]*0.6,2.3,n.pos[2]*0.6), 0x9fb8a8, .07); // núcleo -> comunidad
+});
+
+/* ============================================================
+   SATÉLITES: MODELOS DE REFERENCIA (MIT · UCLA · Stanford)
+   Orbitan el modelo UNAL como estructuras comparativas.
+   ============================================================ */
+const satGroup = new THREE.Group();
+scene.add(satGroup);
+
+// Anillo interno: referentes del Norte Global (benchmarking original)
+// Anillo externo (verde/dorado): referentes del Sur Global / Latinoamérica (Rec. 1)
+// anillos de órbita en el suelo (guías visuales)
+[30,44].forEach((rad,idx)=>{
+  const r=new THREE.Mesh(
+    new THREE.RingGeometry(rad-0.15,rad+0.15,96),
+    new THREE.MeshBasicMaterial({color: idx===0?0x3a5a7a:0x2e8b57, transparent:true, opacity:.35, side:THREE.DoubleSide})
+  );
+  r.rotation.x=-Math.PI/2;r.position.y=0.05;scene.add(r);
+});
+
+const satDefs=[
+  // Norte global — órbita interior
+  {key:'mit',       label:'MIT',             color:0x2a6fb0, angle:0,            orbit:30, ring:'norte'},
+  {key:'ucla',      label:'UCLA',            color:0xb08a2a, angle:Math.PI*2/3, orbit:30, ring:'norte'},
+  {key:'stanford',  label:'Stanford',        color:0x9c2a2a, angle:Math.PI*4/3, orbit:30, ring:'norte'},
+  // Sur global / Latinoamérica — órbita exterior (Rec. 1)
+  {key:'tec',       label:'Tec Monterrey',   color:0x17806a, angle:Math.PI*0.25, orbit:44, ring:'sur'},
+  {key:'usp',       label:'USP',             color:0x1f7a4d, angle:Math.PI*0.75, orbit:44, ring:'sur'},
+  {key:'unam',      label:'UNAM',            color:0x2e8b57, angle:Math.PI*1.25, orbit:44, ring:'sur'},
+  {key:'integrity', label:'INTEGRITY-AI',    color:0xb89347, angle:Math.PI*1.75, orbit:44, ring:'sur'},
+];
+const satellites=[];
+satDefs.forEach(s=>{
+  const g=new THREE.Group();
+  const x=Math.cos(s.angle)*s.orbit, z=Math.sin(s.angle)*s.orbit;
+  // base disco
+  const base=new THREE.Mesh(
+    new THREE.CylinderGeometry(4.2,4.6,0.8,6),
+    new THREE.MeshStandardMaterial({color:s.color,roughness:.5,metalness:.2,emissive:new THREE.Color(s.color).multiplyScalar(.1)})
+  );
+  base.position.y=0.4;base.castShadow=true;g.add(base);
+  // torre escalonada (3 niveles = 3 órganos/funciones)
+  for(let i=0;i<3;i++){
+    const w=3.4-i*0.8;
+    const seg=new THREE.Mesh(
+      new THREE.BoxGeometry(w,2,w),
+      new THREE.MeshStandardMaterial({color:s.color,roughness:.45,metalness:.2,emissive:new THREE.Color(s.color).multiplyScalar(.12)})
+    );
+    seg.position.y=1.8+i*2.2;seg.castShadow=true;
+    const ed=new THREE.LineSegments(new THREE.EdgesGeometry(seg.geometry),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.5}));
+    seg.add(ed);
+    seg.userData={group:g};
+    clickable.push(seg);
+    g.add(seg);
+  }
+  // cúspide luminosa
+  const tip=new THREE.Mesh(new THREE.OctahedronGeometry(1.1),
+    new THREE.MeshStandardMaterial({color:0xffffff,emissive:s.color,emissiveIntensity:.7}));
+  tip.position.y=9.4;g.add(tip);
+  g.position.set(x,0,z);
+  g.userData={key:s.key, baseColor:new THREE.Color(s.color), mat:base.material, tip, label:s.label, orbit:s.orbit, angle:s.angle};
+  satGroup.add(g);
+  satellites.push(g);
+  // etiqueta
+  const sub = s.ring==='sur' ? 'Sur Global · Latinoamérica' : 'Norte Global · referencia';
+  const lbl=addLabel(s.label, sub, x, 11.4, z, 0.8);
+  g.userData.labelSprite=lbl;
+  // conector punteado hacia el centro (línea de comparación)
+  const line=new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,6,z),new THREE.Vector3(0,12.5,0)]),
+    new THREE.LineDashedMaterial({color:0x8a97a8,dashSize:1,gapSize:0.8,transparent:true,opacity:.5})
+  );
+  line.computeLineDistances();
+  g.userData.line=line;
+  satGroup.add(line);
+});
+
+/* ============================================================
+   LÍNEA DE TIEMPO 2025–2027 (oculta por defecto)
+   Fases sobre un riel curvo frente al modelo.
+   ============================================================ */
+const timelineGroup=new THREE.Group();
+timelineGroup.visible=false;
+scene.add(timelineGroup);
+
+// riel
+const railPts=[];
+const spanX=40, zFront=24;
+for(let i=0;i<=50;i++){const tt=i/50;railPts.push(new THREE.Vector3(-spanX/2+spanX*tt, 2.2, zFront - Math.sin(tt*Math.PI)*4));}
+const rail=new THREE.Line(new THREE.BufferGeometry().setFromPoints(railPts),
+  new THREE.LineBasicMaterial({color:0xb89347,transparent:true,opacity:.7}));
+timelineGroup.add(rail);
+
+TIMELINE.forEach((ph,i)=>{
+  const tt=i/(TIMELINE.length-1);
+  const x=-spanX/2+spanX*tt;
+  const z=zFront - Math.sin(tt*Math.PI)*4;
+  const pillar=new THREE.Mesh(
+    new THREE.CylinderGeometry(2.1,2.1,3.2,6),
+    new THREE.MeshStandardMaterial({color:ph.color,roughness:.4,metalness:.2,emissive:new THREE.Color(ph.color).multiplyScalar(.15)})
+  );
+  pillar.position.set(x,2.0,z);pillar.castShadow=true;
+  const ed=new THREE.LineSegments(new THREE.EdgesGeometry(pillar.geometry),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.4}));
+  pillar.add(ed);
+  pillar.userData={group:pillar, key:'tl'+ph.n};
+  // registrar como clickable con su propio data
+  DATA['tl'+ph.n]={
+    kicker:'Plan de trabajo · Fase '+ph.n,
+    title:ph.t+' — '+ph.date,
+    sections:[{h:'Actividades', items:ph.items},{h:'Responsable', items:[ph.lead]}],
+    tag:'Ecosistema de lineamientos y guías para el uso ético de la IA'
+  };
+  clickable.push(pillar);
+  pillar.userData.group=pillar;
+  timelineGroup.add(pillar);
+  // número flotante
+  const numLbl=addLabel(ph.n+'  '+ph.t, ph.date, x, 6.2, z, 0.78);
+  numLbl.visible=false;
+  timelineGroup.add(numLbl);
+  // conector entre fases
+  if(i>0){
+    const prevTt=(i-1)/(TIMELINE.length-1);
+    const px=-spanX/2+spanX*prevTt, pz=zFront - Math.sin(prevTt*Math.PI)*4;
+    timelineGroup.add(connectLineDashed(new THREE.Vector3(px,2,pz),new THREE.Vector3(x,2,z)));
+  }
+});
+// título flotante de la línea de tiempo
+const tlTitle=addLabel('Plan de trabajo 2025–2027','DNED → Mesa Técnica de IA · GIIA-UNAL',0,8.5,zFront-4.5,1.1);
+tlTitle.visible=false;timelineGroup.add(tlTitle);
+
+function connectLineDashed(a,b){
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),
+    new THREE.LineDashedMaterial({color:0xb89347,dashSize:0.8,gapSize:0.5}));
+  l.computeLineDistances();return l;
+}
+
+/* Partículas ambientales (datos fluyendo) */
+const pGeo=new THREE.BufferGeometry();
+const N=260;const pos=new Float32Array(N*3);
+for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*70;pos[i*3+1]=Math.random()*34;pos[i*3+2]=(Math.random()-.5)*55;}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+const particles=new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xb89347,size:.18,transparent:true,opacity:.5}));
+scene.add(particles);
+
+/* ============================================================
+   INTERACCIÓN
+   ============================================================ */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+let hovered=null, selectedKey=null;
+
+function setPointer(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  mouse.x=((cx-r.left)/r.width)*2-1;
+  mouse.y=-((cy-r.top)/r.height)*2+1;
+}
+
+function pick(){
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(clickable,false);
+  return hits.length?hits[0].object.userData.group:null;
+}
+
+renderer.domElement.addEventListener('pointermove',e=>{
+  setPointer(e);
+  const g=pick();
+  if(hovered&&hovered!==g){hovered.scale.set(1,1,1);hovered=null;}
+  if(g){hovered=g;g.scale.set(1.05,1.05,1.05);renderer.domElement.style.cursor='pointer';}
+  else renderer.domElement.style.cursor='grab';
+});
+
+let downX=0,downY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-downX)>5||Math.abs(e.clientY-downY)>5)return; // fue arrastre
+  setPointer(e);
+  const g=pick();
+  if(g){selectBlock(g.userData.key);focusOn(g);}
+});
+
+/* Panel */
+const panel=document.getElementById('panel');
+const panelHead=document.getElementById('panelHead');
+const panelBody=document.getElementById('panelBody');
+document.getElementById('closePanel').onclick=()=>{panel.classList.add('hidden');clearHighlight();selectedKey=null;};
+
+function clearHighlight(){
+  scene.traverse(o=>{if(o.userData&&o.userData.mat&&o.userData.baseColor){o.userData.mat.emissive.copy(o.userData.baseColor).multiplyScalar(.12);}});
+}
+
+function selectBlock(key){
+  const d=DATA[key];if(!d)return;
+  selectedKey=key;
+  panelHead.innerHTML=`<span class="kicker">${d.kicker}</span><h2>${d.title}</h2>`;
+  let html='';
+  d.sections.forEach(s=>{
+    html+=`<h3>${s.h}</h3><ul>`;
+    s.items.forEach(i=>html+=`<li>${i}</li>`);
+    html+='</ul>';
+  });
+  if(d.tag)html+=`<div class="tag">${d.tag}</div>`;
+  panelBody.innerHTML=html;
+  panel.classList.remove('hidden');
+  // resaltar
+  clearHighlight();
+  scene.traverse(o=>{
+    if(o.userData&&o.userData.key===key&&o.userData.mat){
+      o.userData.mat.emissive.copy(o.userData.baseColor).multiplyScalar(.9);
+    }
+  });
+}
+
+/* Enfoque de cámara animado */
+let camTween=null;
+function focusOn(group){
+  const t=group.position.clone();
+  const offset=new THREE.Vector3(0, group.userData.key==='comunidad'?16:9, 20);
+  animateCamera(t.clone().add(offset), t);
+}
+function animateCamera(toPos,toTarget){
+  camTween={fromPos:camera.position.clone(),toPos,fromTar:controls.target.clone(),toTar:toTarget,t:0};
+}
+
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+let autoRotate=true;
+let satVisible=true;
+let timelineVisible=false;
+
+function setTimelineVisible(on){
+  timelineVisible=on;
+  timelineGroup.visible=on;
+  timelineGroup.traverse(o=>{if(o.isSprite)o.visible=on;});
+}
+
+document.querySelectorAll('#toolbar button').forEach(btn=>{
+  btn.onclick=()=>{
+    const v=btn.dataset.view;
+    if(v==='toggleRotate'){
+      autoRotate=!autoRotate;
+      btn.textContent=autoRotate?'⏸ Pausar giro':'▶ Reanudar giro';
+      btn.classList.toggle('active',!autoRotate);
+      return;
+    }
+    if(v==='toggleSat'){
+      satVisible=!satVisible;
+      satGroup.visible=satVisible;
+      satellites.forEach(s=>{if(s.userData.labelSprite)s.userData.labelSprite.visible=satVisible;});
+      btn.textContent='👁 Satélites: '+(satVisible?'ON':'OFF');
+      btn.classList.toggle('active',!satVisible);
+      return;
+    }
+    if(v==='timeline'){
+      setTimelineVisible(!timelineVisible);
+      btn.classList.toggle('active',timelineVisible);
+      if(timelineVisible){
+        autoRotate=false;
+        document.querySelector('[data-view="toggleRotate"]').textContent='▶ Reanudar giro';
+        animateCamera(new THREE.Vector3(0,14,46),new THREE.Vector3(0,3,22));
+      }else{
+        animateCamera(new THREE.Vector3(0,18,42),new THREE.Vector3(0,6,0));
+      }
+      return;
+    }
+    if(v==='benchmark'){
+      // asegurar satélites visibles y encuadrar todo
+      if(!satVisible){document.querySelector('[data-view="toggleSat"]').click();}
+      document.querySelectorAll('#toolbar button[data-view]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      animateCamera(new THREE.Vector3(0,40,60),new THREE.Vector3(0,8,0));
+      selectBlock('mit');
+      return;
+    }
+    document.querySelectorAll('#toolbar button[data-view]:not([data-view="toggleRotate"]):not([data-view="toggleSat"])').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(v==='orbit')animateCamera(new THREE.Vector3(0,18,42),new THREE.Vector3(0,6,0));
+    if(v==='top')animateCamera(new THREE.Vector3(0,52,0.1),new THREE.Vector3(0,4,0));
+    if(v==='mesa')animateCamera(new THREE.Vector3(0,16,28),new THREE.Vector3(0,12.5,0));
+  };
+});
+
+/* ============================================================
+   OVERLAYS DOCUMENTALES — Recomendaciones J.M. Sánchez Torres
+   ============================================================ */
+const overlay=document.getElementById('overlay');
+const ovKicker=document.getElementById('ovKicker');
+const ovTitle=document.getElementById('ovTitle');
+const ovIntro=document.getElementById('ovIntro');
+const ovBody=document.getElementById('ovBody');
+document.getElementById('ovClose').onclick=()=>overlay.classList.remove('show');
+addEventListener('keydown',e=>{if(e.key==='Escape')overlay.classList.remove('show');});
+
+const OVERLAYS={
+  /* Rec. 2 y 9 — Arquitectura de decisiones + subsidiariedad */
+  arquitectura:{
+    kicker:'Recomendaciones 2 y 9',
+    title:'Arquitectura de decisiones multinivel y subsidiariedad',
+    intro:'Esbozo de QUÉ se decide en cada nivel (nacional, sede, facultad y compartido), bajo el principio de subsidiariedad: la decisión se toma en el nivel más cercano al lugar donde se genera el riesgo y el valor, salvo cuando afecte a toda la Universidad, comprometa información sensible, implique riesgos elevados o requiera estándares comunes.',
+    build:()=>`
+      <div class="cards">
+        <div class="card" style="border-left-color:#0e2340">
+          <span class="lvl">Nivel Nacional · CNED + Mesa Técnica</span>
+          <h3>Estándares comunes y alto riesgo</h3>
+          <ul>
+            <li>Política institucional y normativa de IA</li>
+            <li>Sistemas de IA de alto riesgo o que afectan a toda la UNAL</li>
+            <li>Datos sensibles e información estratégica</li>
+            <li>Definición de riesgo y rutas de gobernanza</li>
+            <li>Registro institucional de modelos (PLASI)</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left-color:#13837a">
+          <span class="lvl">Nivel Sede</span>
+          <h3>Adaptación territorial</h3>
+          <ul>
+            <li>Capacidades de infraestructura y HPC de la sede</li>
+            <li>Riesgos de contexto territorial</li>
+            <li>Corresponsabilidad con el nivel nacional</li>
+            <li>Soporte a laboratorios vivos locales</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left-color:#2962ff">
+          <span class="lvl">Nivel Facultad / Grupo</span>
+          <h3>Cercanía al riesgo y al valor</h3>
+          <ul>
+            <li>IA en aula (enseñanza-aprendizaje)</li>
+            <li>IA en investigación y extensión</li>
+            <li>Decisiones de bajo riesgo y alcance local</li>
+            <li>Integridad académica y citación responsable</li>
+          </ul>
+        </div>
+        <div class="card" style="border-left-color:#b89347">
+          <span class="lvl">Decisiones compartidas</span>
+          <h3>Co-responsabilidad entre niveles</h3>
+          <ul>
+            <li>Riesgo medio con impacto multi-sede</li>
+            <li>Compra/adopción de herramientas transversales</li>
+            <li>Protección de datos personales (Habeas Data)</li>
+            <li>Sostenibilidad ambiental y huella de carbono</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note">Principio de subsidiariedad (Rec. 9): descentralizar por defecto, centralizar por excepción. La escalada al nivel nacional se activa por afectación institucional, sensibilidad de la información, nivel de riesgo o necesidad de estándares comunes.</div>`
+  },
+
+  /* Rec. 8 — Matriz RACI (ampliada con Supervisa/Suspende y Veto) por riesgo */
+  raci:{
+    kicker:'Recomendación 8',
+    title:'Matriz RACI por nivel de riesgo y misión',
+    intro:'Propuesta inicial para la discusión sobre quién decide qué: quién propone, evalúa, autoriza, implementa, supervisa y puede suspender una iniciativa de IA, según su nivel de riesgo y su apoyo misional. (R=Responsable · A=Autoriza · C=Consultado · I=Informado · S=Supervisa/Suspende).',
+    build:()=>`
+      <div class="legend-inline">
+        <span><i class="pill r-R">R</i> Responsable / Propone-Implementa</span>
+        <span><i class="pill r-A">A</i> Autoriza (rinde cuentas)</span>
+        <span><i class="pill r-C">C</i> Consultado / Evalúa</span>
+        <span><i class="pill r-I">I</i> Informado</span>
+        <span><i class="pill r-S">S</i> Supervisa / puede Suspender</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Actividad sobre una iniciativa de IA</th>
+          <th>Facultad / Grupo</th>
+          <th>Sede</th>
+          <th>Mesa Técnica de IA</th>
+          <th>CNED</th>
+          <th>Jurídico / Control</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Proponer</td><td><i class="pill r-R">R</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-I">I</i></td><td>—</td><td>—</td></tr>
+          <tr><td>Evaluar riesgo (derechos fundamentales)</td><td><i class="pill r-C">C</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-R">R</i></td><td><i class="pill r-I">I</i></td><td><i class="pill r-C">C</i></td></tr>
+          <tr><td>Autorizar — riesgo bajo</td><td><i class="pill r-A">A</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-I">I</i></td><td>—</td><td>—</td></tr>
+          <tr><td>Autorizar — riesgo medio</td><td><i class="pill r-C">C</i></td><td><i class="pill r-A">A</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-I">I</i></td><td><i class="pill r-C">C</i></td></tr>
+          <tr><td>Autorizar — riesgo alto / inaceptable</td><td><i class="pill r-I">I</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-A">A</i></td><td><i class="pill r-C">C</i></td></tr>
+          <tr><td>Implementar</td><td><i class="pill r-R">R</i></td><td><i class="pill r-R">R</i></td><td><i class="pill r-C">C</i></td><td>—</td><td>—</td></tr>
+          <tr><td>Supervisar / auditar en operación</td><td><i class="pill r-I">I</i></td><td><i class="pill r-C">C</i></td><td><i class="pill r-S">S</i></td><td><i class="pill r-I">I</i></td><td><i class="pill r-S">S</i></td></tr>
+          <tr><td>Suspender (veto por riesgo a derechos)</td><td><i class="pill r-I">I</i></td><td><i class="pill r-I">I</i></td><td><i class="pill r-S">S</i></td><td><i class="pill r-A">A</i></td><td><i class="pill r-S">S</i></td></tr>
+        </tbody>
+      </table>
+      <div class="note">El veto se gradúa por el riesgo a los derechos fundamentales, no por el dominio (Rec. 4): un sistema que predice deserción, asigna becas o evalúa propuestas de investigación puede lesionar derechos tanto como uno clínico. Matriz preliminar, sujeta a validación institucional.</div>`
+  },
+
+  /* Rec. 4, 5, 6 — Taxonomía de sistemas de IA + niveles de riesgo */
+  taxonomia:{
+    kicker:'Recomendaciones 4, 5 y 6',
+    title:'Tipologías de sistemas de IA y niveles de riesgo',
+    intro:'"Iniciativas de IA" es demasiado amplio. Se distinguen los sistemas por su propósito y origen, y se les asocia un nivel de riesgo según su posible afectación a derechos fundamentales, adoptando una definición de riesgo (p. ej. proyecto de ley de IA de Colombia o marco UE, adaptados al contexto).',
+    build:()=>`
+      <h3 style="margin-bottom:10px;color:var(--dorado);font-size:13px;letter-spacing:1px;">A · POR PROPÓSITO Y ORIGEN (Rec. 5)</h3>
+      <div class="cards" style="margin-bottom:22px;">
+        <div class="card" style="border-left-color:#c0392b"><h3>Decisión académico-administrativa</h3><ul><li>Deserción, becas, admisiones</li><li>Evaluación de propuestas de investigación</li><li>Alto impacto en derechos</li></ul></div>
+        <div class="card" style="border-left-color:#2962ff"><h3>IA en el aula</h3><ul><li>Enseñanza–aprendizaje</li><li>Integridad académica</li><li>Acompañamiento pedagógico</li></ul></div>
+        <div class="card" style="border-left-color:#13837a"><h3>IA en investigación y extensión</h3><ul><li>Reproducibilidad y transparencia</li><li>Propiedad intelectual</li><li>Datos sensibles</li></ul></div>
+        <div class="card" style="border-left-color:#e8591c"><h3>IA desarrollada en la UNAL</h3><ul><li>Modelos propios</li><li>Soberanía tecnológica</li><li>Ciclo de vida gestionado (PLASI)</li></ul></div>
+        <div class="card" style="border-left-color:#6c3fb0"><h3>IA generativa de terceros</h3><ul><li>Herramientas comerciales en uso hoy</li><li>Fuga de datos / dependencia</li><li>Filtrado y lineamientos de uso</li></ul></div>
+        <div class="card" style="border-left-color:#8a5a2a"><h3>IA agéntica</h3><ul><li>Agentes autónomos</li><li>Supervisión humana reforzada</li><li>Riesgo emergente</li></ul></div>
+      </div>
+      <h3 style="margin-bottom:10px;color:var(--dorado);font-size:13px;letter-spacing:1px;">B · POR NIVEL DE RIESGO A DERECHOS FUNDAMENTALES (Rec. 6)</h3>
+      <div class="risk-row"><div style="font-size:12px;">Inaceptable</div><div class="risk-bar" style="background:#7a1414;">Prohibido — vulnera derechos fundamentales</div></div>
+      <div class="risk-row"><div style="font-size:12px;">Alto</div><div class="risk-bar" style="background:#c0392b;">Autorización CNED + auditoría previa y posterior + veto</div></div>
+      <div class="risk-row"><div style="font-size:12px;">Medio</div><div class="risk-bar" style="background:#e8933f;color:#2a1a00;">Autorización de sede + supervisión de la Mesa Técnica</div></div>
+      <div class="risk-row"><div style="font-size:12px;">Bajo</div><div class="risk-bar" style="background:#17a06a;">Autorización local (facultad) + registro</div></div>
+      <div class="note">La definición de riesgo debe ser contextual: el marco UE orienta pero no es plenamente aplicable a nuestra realidad; conviene anclarse al proyecto de ley de regulación de IA en Colombia (Rec. 6) y a rutas diferenciadas por misión (docencia, investigación, extensión).</div>`
+  },
+
+  /* Rec. 3 — Gobernanza corporativa ⊃ IA ∩ TI ∩ datos */
+  corporativo:{
+    kicker:'Recomendación 3',
+    title:'La gobernanza de IA dentro del gobierno corporativo',
+    intro:'La gobernanza de la IA supera al gobierno de TI: se ubica dentro del gobierno corporativo, con intersecciones con el gobierno de TI y el gobierno de datos. No se reduce a infraestructura, datos y ciberseguridad; abarca las tres misiones y las dimensiones ética y ambiental.',
+    build:()=>`
+      <div style="text-align:center;margin:10px 0 24px;">
+        <svg viewBox="0 0 520 360" width="100%" style="max-width:520px;">
+          <ellipse cx="260" cy="170" rx="250" ry="165" fill="rgba(14,35,64,.55)" stroke="#4f7fc9" stroke-width="2"/>
+          <text x="260" y="35" fill="#cfe0ff" font-size="15" font-weight="700" text-anchor="middle">Gobierno Corporativo (UNAL)</text>
+          <ellipse cx="260" cy="185" rx="150" ry="110" fill="rgba(15,140,130,.5)" stroke="#5fd8cd" stroke-width="2"/>
+          <text x="260" y="110" fill="#d6fff8" font-size="15" font-weight="700" text-anchor="middle">Gobernanza de IA</text>
+          <ellipse cx="200" cy="210" rx="78" ry="62" fill="rgba(41,98,255,.45)" stroke="#7aa0ff" stroke-width="2"/>
+          <text x="185" y="215" fill="#eaf0ff" font-size="13" font-weight="700" text-anchor="middle">Gobierno<tspan x="185" dy="16">de TI</tspan></text>
+          <ellipse cx="320" cy="210" rx="78" ry="62" fill="rgba(232,89,28,.42)" stroke="#ffa06a" stroke-width="2"/>
+          <text x="335" y="215" fill="#ffe6d6" font-size="13" font-weight="700" text-anchor="middle">Gobierno<tspan x="335" dy="16">de datos</tspan></text>
+        </svg>
+      </div>
+      <div class="cards">
+        <div class="card" style="border-left-color:#13837a"><h3>Dimensiones misionales</h3><ul><li>Docencia</li><li>Investigación</li><li>Extensión</li></ul></div>
+        <div class="card" style="border-left-color:#17a06a"><h3>Dimensión ética y ambiental</h3><ul><li>Lineamientos éticos y de derechos</li><li>Huella de carbono con marcos reconocidos (Rec. 7)</li></ul></div>
+        <div class="card" style="border-left-color:#2962ff"><h3>Intersección con TI</h3><ul><li>Infraestructura, HPC, ciberseguridad</li><li>Operación tecnológica (distinta de la gobernanza)</li></ul></div>
+        <div class="card" style="border-left-color:#e8591c"><h3>Intersección con datos</h3><ul><li>Habeas Data, calidad y linaje de datos</li><li>Soberanía de datos</li></ul></div>
+      </div>
+      <div class="note">Rec. 7 — Para la dimensión ambiental conviene usar marcos de medición ya reconocidos internacionalmente (en vez de inventar indicadores propios); se sugiere articular con el prof. Carlos Moreno Mantilla y la Oficina de Gestión Ambiental de la sede Bogotá.</div>`
+  },
+
+  /* Índice de recomendaciones y su incorporación */
+  recomendaciones:{
+    kicker:'Comentarios · Jenny Marcela Sánchez Torres (01-oct-2026)',
+    title:'Las 10 recomendaciones y cómo se incorporaron',
+    intro:'Trazabilidad de los comentarios de la Profesora Titular (Facultad de Ingeniería) al modelo de gobernanza, y su reflejo en este gemelo digital.',
+    build:()=>{
+      const recs=[
+        ['1','Incluir referentes del Sur Global / Latinoamérica (Tec de Monterrey, USP, UNAM, INTEGRITY-AI con U. del Cauca y U. San Buenaventura).','Añadidos como satélites en una órbita exterior "Sur Global", clicables con su aporte.'],
+        ['2','Esbozar arquitectura de decisiones: qué decide el nivel nacional, las sedes, las facultades y qué es compartido.','Vista "Arquitectura de decisiones" con cuatro capas y escalada por excepción.'],
+        ['3','La gobernanza de IA supera el gobierno de TI; está en el gobierno corporativo con intersección a TI y datos.','Diagrama de conjuntos "Gobernanza corporativa" (IA ⊃ TI ∩ datos) + dimensiones misionales/ética/ambiental.'],
+        ['4','El veto debe graduarse por riesgo a derechos fundamentales, no por "académico vs. salud".','Reformulada la lógica de veto en la matriz RACI y en los niveles de riesgo (ejemplos: deserción, becas, evaluación).'],
+        ['5','Distinguir tipos de sistemas de IA ("iniciativas de IA" es muy amplio).','Taxonomía por propósito/origen: administrativo, aula, investigación, propia, generativa y agéntica.'],
+        ['6','Adoptar una definición de riesgo (proyecto de ley de IA de Colombia / marco UE adaptado).','Cuatro niveles de riesgo codificados por color, anclados a derechos fundamentales.'],
+        ['7','Usar marcos ambientales reconocidos en lugar de inventar indicadores; consultar al prof. Moreno Mantilla y la Of. de Gestión Ambiental.','Nota explícita en el Núcleo Técnico/Green Computing y en la vista de gobernanza corporativa.'],
+        ['8','Propuesta tipo matriz RACI: quién propone, evalúa, autoriza, implementa, supervisa y puede suspender.','Vista "Matriz RACI por riesgo" con roles R/A/C/I/S diferenciados por nivel de riesgo.'],
+        ['9','Aplicar subsidiariedad: decidir en el nivel más cercano al riesgo y al valor.','Principio incorporado en la arquitectura de decisiones (descentralizar por defecto, centralizar por excepción).'],
+        ['10','Incorporar legitimidad institucional y capacidades habilitantes; separar gobernanza de operación tecnológica.','Nuevo nodo transversal "Capacidades Habilitantes & Legitimidad" en la escena 3D.']
+      ];
+      return recs.map(r=>`<div class="rec-item"><b>${r[0]}. ${r[1]}</b><span class="how">${r[2]}</span></div>`).join('');
+    }
+  }
+};
+
+document.querySelectorAll('#toolbar button[data-overlay]').forEach(btn=>{
+  btn.onclick=()=>{
+    const o=OVERLAYS[btn.dataset.overlay];if(!o)return;
+    ovKicker.textContent=o.kicker;
+    ovTitle.textContent=o.title;
+    ovIntro.textContent=o.intro;
+    ovBody.innerHTML=o.build();
+    overlay.classList.add('show');overlay.scrollTop=0;
+  };
+});
+
+/* ============================================================
+   LOOP
+   ============================================================ */
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=clock.getDelta();const el=clock.getElapsedTime();
+
+  if(autoRotate && !camTween){
+    const a=0.12*dt;
+    const p=camera.position;
+    const nx=p.x*Math.cos(a)-p.z*Math.sin(a);
+    const nz=p.x*Math.sin(a)+p.z*Math.cos(a);
+    camera.position.x=nx;camera.position.z=nz;
+    camera.lookAt(controls.target);
+  }
+
+  // flotación suave de la Mesa y anillo
+  mesa.position.y=12.5+Math.sin(el*1.1)*0.18;
+  ring.position.y=mesa.position.y;
+  ring.rotation.z+=dt*0.25;
+
+  // núcleos: leve bob desfasado
+  nucleos.forEach((n,i)=>{n.position.y=n.userData.baseY+Math.sin(el*0.9+i)*0.12;});
+
+  // satélites: órbita lenta alrededor del modelo
+  if(satGroup.visible){
+    satellites.forEach((s,i)=>{
+      const a=s.userData.angle + el*0.07;
+      const x=Math.cos(a)*s.userData.orbit;
+      const z=Math.sin(a)*s.userData.orbit;
+      s.position.set(x,0,z);
+      s.userData.tip.rotation.y+=dt*0.8;
+      s.userData.tip.position.y=9.4+Math.sin(el*1.3+i)*0.25;
+      if(s.userData.labelSprite)s.userData.labelSprite.position.set(x,11.4,z);
+      if(s.userData.line){
+        const pos=s.userData.line.geometry.attributes.position;
+        pos.setXYZ(0,x,6,z); pos.needsUpdate=true;
+        s.userData.line.computeLineDistances();
+      }
+    });
+  }
+
+  // partículas suben
+  const arr=pGeo.attributes.position.array;
+  for(let i=0;i<N;i++){arr[i*3+1]+=dt*0.9;if(arr[i*3+1]>34)arr[i*3+1]=0;}
+  pGeo.attributes.position.needsUpdate=true;
+
+  // tween de cámara
+  if(camTween){
+    camTween.t=Math.min(1,camTween.t+dt*1.6);
+    const e=1-Math.pow(1-camTween.t,3);
+    camera.position.lerpVectors(camTween.fromPos,camTween.toPos,e);
+    controls.target.lerpVectors(camTween.fromTar,camTween.toTar,e);
+    if(camTween.t>=1)camTween=null;
+  }
+
+  controls.update();
+  renderer.render(scene,camera);
+}
+animate();
+
+// quitar loader
+setTimeout(()=>{document.getElementById('loading').style.display='none';},500);
+
+// selección inicial informativa
+selectBlock('mesa');
+</script>
+</body>
+</html>
