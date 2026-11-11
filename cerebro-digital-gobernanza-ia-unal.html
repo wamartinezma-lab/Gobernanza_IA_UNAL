@@ -79,18 +79,37 @@
   /* modal deliberación */
   #delib{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
     background:rgba(5,8,11,.72);backdrop-filter:blur(4px);padding:20px;}
-  #delib.show{display:flex;}
-  #delib .box{background:#0f1f1a;border:1px solid var(--borde);border-radius:18px;max-width:760px;width:100%;
+  #ask{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+    background:rgba(5,8,11,.72);backdrop-filter:blur(4px);padding:20px;}
+  #delib.show,#ask.show{display:flex;}
+  #delib .box,#ask .box{background:#0f1f1a;border:1px solid var(--borde);border-radius:18px;max-width:760px;width:100%;
     max-height:88vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.6);}
-  #delib .dh{padding:16px 20px;border-bottom:1px solid var(--borde);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
-  #delib .dh h2{font-size:18px;} #delib .dh .k{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);}
-  #delib .db{padding:18px 20px;}
-  #delib textarea{width:100%;min-height:64px;background:#0a1512;border:1px solid var(--borde);border-radius:10px;
+  #delib .dh,#ask .dh{padding:16px 20px;border-bottom:1px solid var(--borde);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  #delib .dh h2,#ask .dh h2{font-size:18px;} #delib .dh .k,#ask .dh .k{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);}
+  #delib .db,#ask .db{padding:18px 20px;}
+  #delib textarea,#ask textarea{width:100%;min-height:64px;background:#0a1512;border:1px solid var(--borde);border-radius:10px;
     color:#e9eef0;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;}
-  #delib .run{margin-top:10px;background:var(--dorado);color:var(--verde-prof);border:none;border-radius:10px;
+  #delib .run,#ask .run{margin-top:10px;background:var(--dorado);color:var(--verde-prof);border:none;border-radius:10px;
     padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;}
   #delib .agents{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
   @media(max-width:620px){#delib .agents{grid-template-columns:1fr;}}
+  /* respuestas del asistente */
+  .ans-card{border-radius:12px;padding:14px 16px;background:linear-gradient(135deg,#143027,#0e1f1a);border:1px solid var(--borde);}
+  .ans-card h4{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin-bottom:6px;}
+  .ans-card p{font-size:13px;line-height:1.55;color:#eaf0f2;}
+  .src{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.035);
+    border-left:4px solid var(--c);margin-top:8px;cursor:pointer;transition:background .2s;}
+  .src:hover{background:rgba(255,255,255,.08);}
+  .src .sd{width:11px;height:11px;border-radius:50%;background:var(--c);flex:0 0 auto;margin-top:3px;box-shadow:0 0 7px var(--c);}
+  .src .st{font-size:12.5px;font-weight:700;color:#fff;}
+  .src .sx{font-size:11.5px;color:#cfd8da;line-height:1.45;}
+  .src .sc{font-size:10px;color:var(--gris);}
+  .fb{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .fb span{font-size:11.5px;color:#9fb0b4;}
+  .fb button{background:rgba(255,255,255,.08);border:1px solid var(--borde);color:#e9eef0;border-radius:9px;
+    padding:6px 12px;font-size:12.5px;cursor:pointer;}
+  .fb button:hover{background:rgba(255,255,255,.16);}
+  .fb .ev{background:linear-gradient(135deg,#17a06a,#0f8c82);border:none;color:#fff;font-weight:700;}
   .acard{border-radius:12px;padding:12px 14px;border-left:5px solid var(--c);background:rgba(255,255,255,.04);}
   .acard h5{font-size:13px;margin-bottom:3px;color:#fff;}
   .acard .mv{font-size:10.5px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
@@ -111,7 +130,7 @@
   #growth{position:fixed;left:18px;top:92px;z-index:10;background:var(--panel);border:1px solid var(--borde);
     border-radius:12px;padding:8px 13px;font-size:11.5px;color:#cfd8da;backdrop-filter:blur(6px);}
   #growth b{color:var(--amarillo);}
-  #delib .xd{cursor:pointer;background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;flex:0 0 auto;}
+  #delib .xd,#ask .xd{cursor:pointer;background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;flex:0 0 auto;}
 
   .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
   .node{cursor:pointer;}
@@ -165,10 +184,11 @@
 <div class="legend" id="legend"></div>
 
 <div class="ctl">
+  <button id="btnAsk">💬 Preguntar</button>
   <button id="btnDelib">⚖ Deliberar</button>
   <button id="btnThink" class="on">⚡ Pensar</button>
   <button id="btnReset">⟳ Centrar</button>
-  <button id="btnForget" title="Borrar los insights guardados">🧽 Olvidar</button>
+  <button id="btnForget" title="Borrar los insights y el aprendizaje guardados">🧽 Olvidar</button>
 </div>
 
 <div id="panel">
@@ -197,7 +217,33 @@
   </div>
 </div>
 
-<div class="hint">🧠 Clic en un nodo para explorar · ⚖ Deliberar para aplicar el modelo · los pulsos son el “pensamiento” recorriendo las sinapsis</div>
+<!-- Modal: Preguntar al cerebro (consulta la base de conocimiento + decide + aprende) -->
+<div id="ask">
+  <div class="box">
+    <div class="dh">
+      <div><div class="k">Asistente · consulta la base de conocimiento</div><h2>Pregúntale al cerebro</h2></div>
+      <button class="xd" id="closeA">✕</button>
+    </div>
+    <div class="db">
+      <p style="font-size:12.5px;color:#cfd8da;">Escribe una pregunta sobre el modelo (p. ej. <i>“¿quién decide sobre un sistema de alto riesgo?”</i>, <i>“¿cómo se protegen los datos?”</i>, <i>“¿puede un agente acceder a sistemas?”</i>). El cerebro <b>recupera</b> el conocimiento relevante, <b>decide/responde</b> aplicando el modelo y <b>aprende</b> de tu retroalimentación.</p>
+      <div class="presets" id="aSugs"></div>
+      <textarea id="aQ" placeholder="¿Qué quieres preguntarle al cerebro?"></textarea>
+      <button class="run" id="aRun">Preguntar ▶</button>
+      <div id="aAnswer" style="display:none;margin-top:14px;"></div>
+      <details style="margin-top:16px;">
+        <summary style="cursor:pointer;font-size:12px;color:var(--dorado);font-weight:700;">⚙ Mecanismos de aprendizaje</summary>
+        <ul style="margin-top:8px;list-style:none;">
+          <li style="font-size:12px;color:#cfd8da;padding-left:15px;position:relative;margin-bottom:6px;"><span style="position:absolute;left:0;color:var(--dorado);">▸</span><b>Refuerzo de sinapsis (Hebbian):</b> los conceptos recuperados juntos fortalecen su conexión; las sinapsis usadas se ven más brillantes y gruesas.</li>
+          <li style="font-size:12px;color:#cfd8da;padding-left:15px;position:relative;margin-bottom:6px;"><span style="position:absolute;left:0;color:var(--dorado);">▸</span><b>Retroalimentación 👍/👎:</b> ajusta el peso de relevancia de cada concepto, mejorando el ranking de respuestas futuras.</li>
+          <li style="font-size:12px;color:#cfd8da;padding-left:15px;position:relative;margin-bottom:6px;"><span style="position:absolute;left:0;color:var(--dorado);">▸</span><b>Memoria persistente:</b> pesos e insights se guardan en este navegador (<code>localStorage</code>) y se conservan entre sesiones.</li>
+          <li style="font-size:12px;color:#cfd8da;padding-left:15px;position:relative;"><span style="position:absolute;left:0;color:var(--dorado);">▸</span><b>Registro de insight:</b> cada consulta puede convertirse en un nodo que hace crecer el cerebro.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="hint">🧠 Clic en un nodo · 💬 Preguntar al cerebro · ⚖ Deliberar un caso · los pulsos son el “pensamiento” recorriendo las sinapsis</div>
 
 <script>
 /* ============================================================
@@ -743,10 +789,154 @@ function evolveFromDelib(){
   const fg=document.getElementById('forget'); if(fg) fg.onclick=(e)=>{e.preventDefault();forgetInsights();};
 }
 
-// borrar la memoria persistente y recargar la vista
+// borrar la memoria persistente (insights + aprendizaje) y recargar la vista
 function forgetInsights(){
-  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  try{ localStorage.removeItem(LS_KEY); localStorage.removeItem(LRN_KEY); }catch(e){}
   location.reload();
+}
+
+// =========================================================
+//  ASISTENTE: preguntar al cerebro + MECANISMOS DE APRENDIZAJE
+//  - Recuperación sobre la base de conocimiento (nodos)
+//  - Decisión con el protocolo multi-agente (si es un caso)
+//  - Aprendizaje: pesos de relevancia (feedback) + refuerzo
+//    de sinapsis (Hebbian), ambos persistentes en localStorage
+// =========================================================
+const LRN_KEY='cerebro-unal-learning-v1';
+let LEARN = (function(){ try{ return JSON.parse(localStorage.getItem(LRN_KEY))||{w:{},syn:{}}; }catch(e){ return {w:{},syn:{}}; } })();
+function saveLearn(){ try{ localStorage.setItem(LRN_KEY, JSON.stringify(LEARN)); }catch(e){} }
+function wOf(id){ return LEARN.w[id]||1; }                       // peso de relevancia aprendido (>=0.2)
+function synKey(a,b){ return [a,b].sort().join('|'); }
+function synOf(a,b){ return LEARN.syn[synKey(a,b)]||0; }         // fuerza aprendida de la conexión
+
+// aplicar el refuerzo persistido a las sinapsis existentes (grosor/brillo)
+function applySynapseStrength(){
+  edgeEls.forEach(e=>{
+    const s=synOf(e.dataset.a,e.dataset.b);
+    if(s>0){ e.setAttribute('stroke-width', Math.min(5, 1.1+s*0.8)); e.setAttribute('stroke-opacity', Math.min(.9,.2+s*0.12)); }
+  });
+}
+applySynapseStrength();
+
+// stopwords y tokenizador simple (es)
+const STOP=new Set('el la los las un una unos unas de del al a y o u e que quien quién como cómo cuando cuándo donde dónde por para con sin sobre segun según su sus se es son ser esta este esto estos estas los las mas más menos muy puede pueden debe deben cual cuál qué cuáles si no en lo le les nos me mi tu te uno dos'.split(' '));
+function toks(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^a-z0-9ñ\s]/g,' ').split(/\s+/).filter(w=>w.length>2&&!STOP.has(w)); }
+// índice de texto por nodo (título + desc + bullets + quote)
+function nodeText(n){ return [n.l.replace(/\n/g,' '), n.desc||'', (n.bullets||[]).join(' '), n.quote||''].join(' '); }
+
+// recuperación: puntúa cada nodo por solapamiento de términos * peso aprendido
+function retrieve(q, k){
+  const qt=toks(q); if(!qt.length) return [];
+  const scored=NODES.map(n=>{
+    const nt=toks(nodeText(n)); const set=new Set(nt);
+    let hits=0; qt.forEach(t=>{ if(set.has(t)) hits+=2; else if(nt.some(w=>w.startsWith(t)||t.startsWith(w))) hits+=1; });
+    return {n, score: hits * wOf(n.id)};
+  }).filter(o=>o.score>0).sort((a,b)=>b.score-a.score);
+  return scored.slice(0,k);
+}
+
+// ¿la pregunta describe un caso a decidir? (dispara el protocolo)
+function looksLikeCase(q){ return /\b(puede|deberia|debería|autoriz|aprob|permit|riesgo|usar|desplegar|implementar|caso|sistema|agente|decidir|intervenir)\b/.test(q.toLowerCase()); }
+
+// ---- sugerencias precargadas ----
+const QSUGS=['¿Quién decide sobre un sistema de alto riesgo?','¿Cómo se protegen los datos personales?',
+  '¿Qué hace Safety AI?','¿Puede un agente acceder a sistemas?','¿Cómo se gradúa el riesgo?','¿Qué son las mesas de co-creación?'];
+document.getElementById('aSugs').innerHTML=QSUGS.map(s=>`<span class="preset">${s}</span>`).join('');
+document.querySelectorAll('#aSugs .preset').forEach(p=>p.onclick=()=>{document.getElementById('aQ').value=p.textContent;});
+
+function openAsk(){ document.getElementById('ask').classList.add('show'); }
+document.getElementById('btnAsk').onclick=openAsk;
+document.getElementById('closeA').onclick=()=>document.getElementById('ask').classList.remove('show');
+
+let lastAsk=null;
+document.getElementById('aRun').onclick=function(){
+  const q=(document.getElementById('aQ').value||'').trim();
+  const box=document.getElementById('aAnswer');
+  if(!q){ box.style.display='block'; box.innerHTML='<div class="ans-card"><p>Escribe una pregunta para consultar la base de conocimiento.</p></div>'; return; }
+  const top=retrieve(q,4);
+  box.style.display='block';
+  if(!top.length){
+    box.innerHTML='<div class="ans-card"><h4>Sin coincidencias</h4><p>No encontré conceptos relacionados en la base de conocimiento. Prueba con términos del modelo (riesgo, datos, agentes, mesa, plenaria, deliberación…).</p></div>';
+    return;
+  }
+  // DECISIÓN/RESPUESTA
+  let decisionHtml='';
+  if(looksLikeCase(q)){
+    const d=decide(q);
+    decisionHtml=`<div class="ans-card" style="margin-bottom:10px;"><h4>Decisión (protocolo multi-agente)</h4><p>${d.verdict}</p>`+
+      `<p style="margin-top:6px;font-size:12px;color:#9fb0b4;">Nivel de riesgo estimado <b>${d.lvl}/3</b> · agentes activados: ${d.involved.map(x=>labelOf[x]).join(', ')||'ninguno'}.</p></div>`;
+  }
+  const lead=top[0].n;
+  const synth=`Según la base de conocimiento, lo más relevante es <b>${lead.l.replace(/\n/g,' ')}</b>: ${lead.desc} `+
+    (top[1]?`También se relaciona con <b>${top[1].n.l.replace(/\n/g,' ')}</b>.`:'');
+  let html=decisionHtml+`<div class="ans-card"><h4>Respuesta</h4><p>${synth}</p></div>`;
+  html+='<h4 style="font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin:14px 0 2px;">Fuentes del cerebro</h4>';
+  html+=top.map(o=>`<div class="src" data-go="${o.n.id}" style="--c:${lc(o.n.id)}"><span class="sd"></span><div><div class="st">${o.n.l.replace(/\n/g,' ')}</div><div class="sx">${(o.n.desc||'').slice(0,150)}</div><div class="sc">${LOBES[o.n.lobe].name} · relevancia ${o.score.toFixed(1)}</div></div></div>`).join('');
+  // retroalimentación + evolución
+  html+='<div class="fb"><span>¿Te sirvió esta respuesta?</span>'+
+    '<button id="fbUp">👍 Sí (reforzar)</button><button id="fbDown">👎 No (ajustar)</button>'+
+    '<button class="ev" id="aEvolve">🧬 Guardar como insight</button></div>'+
+    '<div id="aLearnMsg" style="font-size:11.5px;color:#8fd3b4;font-style:italic;margin-top:8px;"></div>';
+  box.innerHTML=html;
+
+  // navegar al nodo fuente desde la respuesta
+  box.querySelectorAll('.src[data-go]').forEach(s=>s.onclick=()=>{
+    document.getElementById('ask').classList.remove('show'); select(s.dataset.go);
+  });
+
+  const ids=top.map(o=>o.n.id);
+  lastAsk={q, ids, lvl: looksLikeCase(q)?decide(q).lvl:null, involved: looksLikeCase(q)?decide(q).involved:[]};
+
+  // APRENDIZAJE por retroalimentación
+  document.getElementById('fbUp').onclick=()=>feedback(ids, +1);
+  document.getElementById('fbDown').onclick=()=>feedback(ids, -1);
+  document.getElementById('aEvolve').onclick=()=>evolveFromAsk();
+};
+
+// decisión multi-agente a partir de texto (misma heurística que la deliberación)
+function decide(txt0){
+  const txt=txt0.toLowerCase();
+  const fisico=/\b(físic|fisic|lesi|muerte|vehícul|vehicul|autónom|autonom|médic|medic|clínic|clinic|triage|urgencia|arma|infraestructura|accidente|salud)/.test(txt);
+  const datos=/\b(dato|datos|personal|sensible|habeas|privacidad|biométr|biometr|vigilancia|credencial|acceso a sistemas)/.test(txt);
+  const acceso=/\b(deserci|beca|admis|desigual|acceso|sesgo|discrimin|vulnerable|socioeconó|socioecono)/.test(txt);
+  const cultura=/\b(content|creativ|cultur|arte|expresi|homogen|uniformiz|propaganda|manipul|étnic|etnic|lengua|estilo|diseño)/.test(txt);
+  const flags=[fisico,acceso,datos,cultura].filter(Boolean).length;
+  let verdict, lvl;
+  if(fisico&&flags>=2){lvl=3;verdict='Intervención fuerte plausible (Safety AI + ≥1 agente): medida reversible y proporcional, con supervisión humana y registro. Escalar a la Plenaria/CNED.';}
+  else if(fisico){lvl=2;verdict='Contención reversible + supervisión humana mientras se confirma inminencia/probabilidad del daño físico (umbral 2).';}
+  else if(flags>=1){lvl=1;verdict='No procede intervención fuerte (sin daño físico inminente): salvaguardas, transparencia y mitigaciones no coercitivas; prevalece la opción más reversible. Según subsidiariedad, decide la facultad/sede y escala por excepción.';}
+  else {lvl=0;verdict='No intervención / monitoreo: sin señal de escalada ni conflicto de valores.';}
+  const involved=[['safety',fisico],['equality',acceso],['freedom',datos],['culture',cultura]].filter(x=>x[1]).map(x=>x[0]);
+  return {verdict, lvl, involved};
+}
+
+// MECANISMO 1+2: feedback ajusta pesos de relevancia + refuerzo Hebbian de sinapsis
+function feedback(ids, dir){
+  const step=dir>0?0.25:-0.2;
+  ids.forEach(id=>{ LEARN.w[id]=Math.max(0.2, Math.min(4, wOf(id)+step)); });
+  if(dir>0){ // co-activación: refuerza conexiones entre los recuperados
+    for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++){
+      const kk=synKey(ids[i],ids[j]); LEARN.syn[kk]=Math.min(5,(LEARN.syn[kk]||0)+0.5);
+    }
+  }
+  saveLearn(); applySynapseStrength();
+  document.getElementById('aLearnMsg').textContent = dir>0
+    ? '✓ Aprendido: reforcé la relevancia de estos conceptos y sus conexiones (persistente). Las sinapsis usadas se ven más intensas.'
+    : '✓ Ajustado: reduje la relevancia de estos conceptos para futuras respuestas (persistente).';
+}
+
+// MECANISMO 3: convertir la consulta en un insight persistente (crece el cerebro)
+function evolveFromAsk(){
+  if(!lastAsk) return;
+  insightCount++;
+  const rec={seq:insightCount, case:'Consulta: '+lastAsk.q, lvl: lastAsk.lvl!=null?lastAsk.lvl:0,
+             involved: lastAsk.involved.length?lastAsk.involved:['protocolo'],
+             ang:Math.random()*Math.PI*2, rad:150+insightCount*8, ts:Date.now()};
+  insights.push(rec); saveInsights(); spawnInsight(rec,true); refreshGrowth();
+  // también refuerza las conexiones hacia las fuentes
+  feedback(lastAsk.ids, +1);
+  document.getElementById('aLearnMsg').textContent='🧬 Insight '+rec.seq+' guardado: el cerebro creció a '+NODES.length+' nodos y '+EDGES.length+' sinapsis (persistente).';
 }
 </script>
 </body>
