@@ -168,6 +168,7 @@
   <button id="btnDelib">⚖ Deliberar</button>
   <button id="btnThink" class="on">⚡ Pensar</button>
   <button id="btnReset">⟳ Centrar</button>
+  <button id="btnForget" title="Borrar los insights guardados">🧽 Olvidar</button>
 </div>
 
 <div id="panel">
@@ -528,6 +529,10 @@ window.addEventListener('mousemove',e=>{if(!pan)return;const s=vb.w/svg.clientWi
   vb.x=pan.vx-(e.clientX-pan.x)*s;vb.y=pan.vy-(e.clientY-pan.y)*s;applyVB();});
 window.addEventListener('mouseup',()=>pan=null);
 document.getElementById('btnReset').onclick=()=>{vb={x:0,y:0,w:1280,h:820};applyVB();clearSel();};
+document.getElementById('btnForget').onclick=()=>{
+  if(typeof insights!=='undefined' && insights.length && confirm('¿Borrar los '+insights.length+' insights aprendidos? El cerebro volverá a su estado base.')) forgetInsights();
+  else if(typeof insights!=='undefined' && !insights.length) alert('El cerebro aún no tiene insights guardados.');
+};
 
 // =========================================================
 //  "PENSAMIENTO": pulsos por las sinapsis
@@ -679,32 +684,69 @@ document.getElementById('dRun').onclick=function(){
 // =========================================================
 //  EVOLUCIÓN: el cerebro aprende y crece (nuevos nodos Insight)
 // =========================================================
+const LS_KEY='cerebro-unal-insights-v1';
 let insightCount=0;
+let insights=[];           // registros persistidos: {seq,case,lvl,involved,ang,rad,ts}
+const labelOf={freedom:'Freedom',equality:'Equality',safety:'Safety',culture:'Culture',protocolo:'Protocolo'};
+
+function saveInsights(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(insights)); }catch(e){}
+}
+function loadInsights(){
+  try{ const raw=localStorage.getItem(LS_KEY); return raw?JSON.parse(raw):[]; }catch(e){ return []; }
+}
+// materializa un registro de insight como nodo + sinapsis
+function spawnInsight(rec, animate){
+  const id='insight'+rec.seq;
+  const n={id, lobe:'concep', l:'Insight '+rec.seq, r:10, insight:true,
+    x:640+Math.cos(rec.ang)*rec.rad, y:410+Math.sin(rec.ang)*rec.rad*0.7,
+    desc:'Aprendizaje registrado a partir de una deliberación: "'+rec.case.slice(0,140)+(rec.case.length>140?'…':'')+'"',
+    bullets:['Nivel de riesgo estimado: '+rec.lvl+'/3',
+             'Agentes activados: '+rec.involved.map(x=>labelOf[x]).join(', '),
+             'Guardado en la memoria del cerebro'+(rec.ts?' · '+new Date(rec.ts).toLocaleDateString():'')]};
+  NODES.push(n); idx[id]=n; adj[id]=new Set();
+  renderNode(n);
+  const targets=['protocolo',...rec.involved.filter(x=>x!=='protocolo')];
+  targets.forEach(tg=>{ if(idx[tg]){ EDGES.push([id,tg]); adj[id].add(tg); adj[tg].add(id); renderEdge(id,tg); } });
+  if(animate){
+    n._g.querySelector('.core').setAttribute('transform','scale(0.1)');
+    const t0=performance.now();
+    (function grow(t){const k=Math.min(1,(t-t0)/450);const s=0.1+0.9*(1-Math.pow(1-k,3));
+      n._g.querySelector('.core').setAttribute('transform','scale('+s.toFixed(3)+')');
+      if(k<1)requestAnimationFrame(grow);})(t0);
+  }
+  return n;
+}
+function refreshGrowth(){ updGrowth(); document.getElementById('gIns').textContent=insightCount; }
+
+// restaurar insights guardados al abrir (persistencia entre sesiones)
+(function restore(){
+  insights=loadInsights();
+  if(insights.length){
+    insightCount=insights.reduce((m,r)=>Math.max(m,r.seq),0);
+    insights.forEach(r=>spawnInsight(r,false));
+  }
+  refreshGrowth();
+})();
+
 function evolveFromDelib(){
   if(!lastDelib) return;
   insightCount++;
-  const id='insight'+insightCount;
-  // posición cerca del centro, en órbita creciente
-  const ang=Math.random()*Math.PI*2, rad=150+insightCount*8;
-  const n={id, lobe:'concep', l:'Insight '+insightCount, r:10,
-    x:640+Math.cos(ang)*rad, y:410+Math.sin(ang)*rad*0.7,
-    desc:'Aprendizaje registrado a partir de una deliberación: "'+lastDelib.case.slice(0,140)+(lastDelib.case.length>140?'…':'')+'"',
-    bullets:['Nivel de riesgo estimado: '+lastDelib.lvl+'/3','Agentes activados: '+lastDelib.involved.map(x=>({freedom:'Freedom',equality:'Equality',safety:'Safety',culture:'Culture',protocolo:'Protocolo'}[x])).join(', '),'Registrado en la memoria del cerebro (Insights)']};
-  NODES.push(n); idx[id]=n; adj[id]=new Set();
-  renderNode(n);
-  // conectar el insight con el protocolo y con los agentes involucrados
-  const targets=['protocolo',...lastDelib.involved.filter(x=>x!=='protocolo')];
-  targets.forEach(tg=>{ if(idx[tg]){ EDGES.push([id,tg]); adj[id].add(tg); adj[tg].add(id); renderEdge(id,tg); } });
-  updGrowth();
-  document.getElementById('gIns').textContent=insightCount;
-  // animación de aparición
-  n._g.querySelector('.core').setAttribute('transform','scale(0.1)');
-  const t0=performance.now();
-  (function grow(t){const k=Math.min(1,(t-t0)/450);const s=0.1+0.9*(1-Math.pow(1-k,3));
-    n._g.querySelector('.core').setAttribute('transform','scale('+s.toFixed(3)+')');
-    if(k<1)requestAnimationFrame(grow);})(t0);
+  const rec={seq:insightCount, case:lastDelib.case, lvl:lastDelib.lvl, involved:lastDelib.involved,
+             ang:Math.random()*Math.PI*2, rad:150+insightCount*8, ts:Date.now()};
+  insights.push(rec); saveInsights();
+  spawnInsight(rec,true);
+  refreshGrowth();
   const ev=document.getElementById('dEvolve');
-  ev.innerHTML='<span class="evolve-done">✓ Insight '+insightCount+' incorporado al cerebro: ahora tiene '+NODES.length+' nodos y '+EDGES.length+' sinapsis. Cierra este panel para verlo crecer.</span>';
+  ev.innerHTML='<span class="evolve-done">✓ Insight '+rec.seq+' guardado (persistente). El cerebro tiene ahora '+NODES.length+' nodos y '+EDGES.length+' sinapsis; se conservará al recargar. '+
+    '<a href="#" id="forget" style="color:#e8c341;">Olvidar aprendizajes</a></span>';
+  const fg=document.getElementById('forget'); if(fg) fg.onclick=(e)=>{e.preventDefault();forgetInsights();};
+}
+
+// borrar la memoria persistente y recargar la vista
+function forgetInsights(){
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  location.reload();
 }
 </script>
 </body>

@@ -251,6 +251,7 @@
       <button data-view="participantes"><span class="ic">👥</span> Participantes por mesa</button>
       <button data-view="cocreacion"><span class="ic">🧩</span> Mesas de co-creación</button>
       <button data-view="recomendaciones"><span class="ic">📝</span> Recomendaciones</button>
+      <button data-view="cerebro"><span class="ic">🧠</span> Cerebro digital</button>
     </nav>
     <div class="foot">Dashboard interactivo · Fuentes: Propuesta Mesa Técnica de IA, presentación Gobernanza IA y comentarios J.M. Sánchez Torres (2026).</div>
   </aside>
@@ -664,6 +665,25 @@
         <div id="recList"></div>
       </section>
 
+      <!-- ========== CEREBRO DIGITAL ========== -->
+      <section class="view" id="cerebro">
+        <div class="note" style="margin-bottom:10px;">El <b>cerebro digital</b> es la red de conocimiento del modelo (gobernanza UNAL + modelo multi-agente). Permite <b>deliberar casos</b> con los 4 agentes, ver su <b>interacción</b> (acuerdos/conflictos) y <b>evolucionar</b>: los aprendizajes (insights) se guardan de forma <b>persistente</b> en este navegador.</div>
+        <div class="grid g4" style="margin-bottom:12px;">
+          <div class="kpi teal"><div class="n">35+</div><div class="l">Nodos de conocimiento</div></div>
+          <div class="kpi blue"><div class="n">4</div><div class="l">Agentes de valor (Freedom · Equality · Safety · Culture)</div></div>
+          <div class="kpi"><div class="n">6</div><div class="l">Casos de deliberación precargados</div></div>
+          <div class="kpi ok"><div class="n">∞</div><div class="l">Insights persistentes (evolución)</div></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--borde);">
+            <span class="tag" style="margin:0;">Cerebro embebido · interactivo</span>
+            <a href="cerebro-digital-gobernanza-ia-unal.html" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;color:var(--mesa);text-decoration:none;">Abrir a pantalla completa ↗</a>
+          </div>
+          <iframe id="brainFrame" title="Cerebro digital" style="width:100%;height:640px;border:0;display:block;background:#0a0f14;" loading="lazy"></iframe>
+        </div>
+        <div class="note">Sugerencia: usa <b>⚖ Deliberar</b> dentro del cerebro y luego <b>🧬 Evolucionar</b> para registrar un insight; al recargar, el cerebro conservará lo aprendido.</div>
+      </section>
+
     </div>
   </main>
 </div>
@@ -1024,6 +1044,7 @@ const TITLES={
   participantes:['Participantes por mesa','Integrantes de cada mesa de trabajo'],
   cocreacion:['Mesas de co-creación','Mesas priorizadas, participantes por rol y metodología de 4 sesiones incrementales'],
   recomendaciones:['Recomendaciones académicas','Comentarios de J.M. Sánchez Torres y su incorporación'],
+  cerebro:['Cerebro digital','Red de conocimiento y modelo multi-agente (deliberación, interacción y evolución)'],
 };
 const nav=document.getElementById('nav');
 const views=document.querySelectorAll('.view');
@@ -1039,6 +1060,7 @@ nav.addEventListener('click',e=>{
   document.getElementById('aside').classList.remove('open');
   window.scrollTo({top:0,behavior:'smooth'});
   buildCharts(v);
+  if(v==='cerebro'){ const f=document.getElementById('brainFrame'); if(f && !f.src) f.src='cerebro-digital-gobernanza-ia-unal.html'; }
 });
 document.getElementById('menuBtn').onclick=()=>document.getElementById('aside').classList.toggle('open');
 
