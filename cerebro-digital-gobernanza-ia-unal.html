@@ -130,7 +130,44 @@
   #growth{position:fixed;left:18px;top:92px;z-index:10;background:var(--panel);border:1px solid var(--borde);
     border-radius:12px;padding:8px 13px;font-size:11.5px;color:#cfd8da;backdrop-filter:blur(6px);}
   #growth b{color:var(--amarillo);}
-  #delib .xd,#ask .xd{cursor:pointer;background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;flex:0 0 auto;}
+  #delib .xd,#ask .xd,#gen .xd{cursor:pointer;background:rgba(255,255,255,.14);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:16px;flex:0 0 auto;}
+  /* estudio generativo */
+  #gen{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;
+    background:rgba(5,8,11,.72);backdrop-filter:blur(4px);padding:20px;}
+  #gen.show{display:flex;}
+  #gen .box{background:#0f1f1a;border:1px solid var(--borde);border-radius:18px;max-width:780px;width:100%;
+    max-height:90vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.6);}
+  #gen .dh{padding:16px 20px;border-bottom:1px solid var(--borde);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  #gen .dh h2{font-size:18px;} #gen .dh .k{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dorado);}
+  #gen .db{padding:18px 20px;}
+  .gtabs{display:flex;gap:7px;flex-wrap:wrap;}
+  .gtab{background:rgba(255,255,255,.06);border:1px solid var(--borde);color:#cfd8da;border-radius:20px;
+    padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s;}
+  .gtab.on{background:var(--dorado);color:var(--verde-prof);}
+  #gOut{margin-top:6px;}
+  .gcard{border-radius:12px;padding:15px 17px;background:#0a1512;border:1px solid var(--borde);}
+  .gcard h3{font-size:15px;color:#fff;margin-bottom:8px;}
+  .gcard h4{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dorado);margin:14px 0 6px;}
+  .gcard p{font-size:13px;line-height:1.55;color:#eaf0f2;margin-bottom:6px;}
+  .gcard ul{list-style:none;margin:4px 0;} .gcard ol{margin:4px 0 4px 18px;}
+  .gcard li{font-size:12.5px;line-height:1.5;color:#dfe6e8;margin-bottom:6px;padding-left:15px;position:relative;}
+  .gcard ul li::before{content:"▸";position:absolute;left:0;color:var(--dorado);}
+  .gcard ol li{padding-left:2px;}
+  .idea{border-left:4px solid var(--c);background:rgba(255,255,255,.035);border-radius:9px;padding:10px 12px;margin-bottom:8px;}
+  .idea b{color:#fff;} .idea .im{font-size:10.5px;color:var(--gris);text-transform:uppercase;letter-spacing:.8px;}
+  .task{display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.035);border-radius:9px;padding:9px 11px;margin-bottom:7px;}
+  .task .pri{font-size:9.5px;font-weight:800;color:#fff;border-radius:6px;padding:2px 7px;flex:0 0 auto;margin-top:1px;}
+  .task .tt{font-size:12.5px;color:#eaf0f2;line-height:1.45;}
+  .task .meta{font-size:10.5px;color:var(--gris);}
+  .gbar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+  .gbar-lbl{font-size:11.5px;color:#cfd8da;width:150px;flex:0 0 auto;text-align:right;}
+  .gbar-track{flex:1;height:16px;background:rgba(255,255,255,.06);border-radius:8px;overflow:hidden;}
+  .gbar-fill{height:100%;border-radius:8px;}
+  .gbar-val{font-size:11px;color:#cfd8da;width:34px;flex:0 0 auto;}
+  .gactions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .gactions button{background:rgba(255,255,255,.08);border:1px solid var(--borde);color:#e9eef0;border-radius:9px;padding:7px 13px;font-size:12.5px;cursor:pointer;}
+  .gactions button:hover{background:rgba(255,255,255,.16);}
+  .gactions .prim{background:linear-gradient(135deg,#17a06a,#0f8c82);border:none;color:#fff;font-weight:700;}
 
   .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
   .node{cursor:pointer;}
@@ -185,6 +222,7 @@
 
 <div class="ctl">
   <button id="btnAsk">💬 Preguntar</button>
+  <button id="btnGen">✦ Generar</button>
   <button id="btnDelib">⚖ Deliberar</button>
   <button id="btnThink" class="on">⚡ Pensar</button>
   <button id="btnReset">⟳ Centrar</button>
@@ -243,7 +281,31 @@
   </div>
 </div>
 
-<div class="hint">🧠 Clic en un nodo · 💬 Preguntar al cerebro · ⚖ Deliberar un caso · los pulsos son el “pensamiento” recorriendo las sinapsis</div>
+<!-- Modal: Estudio generativo (ideas · informe · gráfico · tareas) -->
+<div id="gen">
+  <div class="box">
+    <div class="dh">
+      <div><div class="k">Estudio generativo · sobre la base de conocimiento</div><h2>Generar con el cerebro</h2></div>
+      <button class="xd" id="closeG">✕</button>
+    </div>
+    <div class="db">
+      <div class="gtabs" id="gTabs">
+        <button class="gtab on" data-t="ideas">💡 Ideas</button>
+        <button class="gtab" data-t="informe">📄 Informe</button>
+        <button class="gtab" data-t="grafico">📊 Gráfico</button>
+        <button class="gtab" data-t="tareas">✅ Tareas</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;">
+        <label style="font-size:12px;color:#cfd8da;">Tema / foco:</label>
+        <select id="gTopic" style="flex:1;min-width:220px;background:#0a1512;border:1px solid var(--borde);border-radius:9px;color:#e9eef0;padding:8px 10px;font-size:13px;"></select>
+        <button class="run" id="gRun" style="margin:0;">Generar ▶</button>
+      </div>
+      <div id="gOut" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="hint">🧠 Clic en un nodo · 💬 Preguntar · ✦ Generar (ideas/informe/gráfico/tareas) · ⚖ Deliberar · los pulsos son el “pensamiento”</div>
 
 <script>
 /* ============================================================
@@ -937,6 +999,167 @@ function evolveFromAsk(){
   // también refuerza las conexiones hacia las fuentes
   feedback(lastAsk.ids, +1);
   document.getElementById('aLearnMsg').textContent='🧬 Insight '+rec.seq+' guardado: el cerebro creció a '+NODES.length+' nodos y '+EDGES.length+' sinapsis (persistente).';
+}
+
+// =========================================================
+//  ESTUDIO GENERATIVO: ideas · informe · gráfico · tareas
+//  (todo derivado de la base de conocimiento del cerebro)
+// =========================================================
+// temas: lóbulos + algunos nodos ancla
+const GEN_TOPICS=[
+  {id:'todo', t:'Todo el modelo'},
+  {id:'lobe:gob', t:'Gobernanza UNAL'},
+  {id:'lobe:agente', t:'Agentes de valor'},
+  {id:'lobe:nucleo', t:'Decisión y riesgo'},
+  {id:'lobe:estand', t:'Estándares (AI IAM · NIST)'},
+  {id:'lobe:concep', t:'Conceptos'},
+  {id:'lobe:cocre', t:'Mesas de co-creación'},
+  {id:'node:riesgoU', t:'Gestión de riesgo'},
+  {id:'node:plenaria', t:'Plenaria y operación'},
+  {id:'node:iam', t:'Identidad y acceso (IAM)'},
+];
+const selTopic=document.getElementById('gTopic');
+selTopic.innerHTML=GEN_TOPICS.map(o=>`<option value="${o.id}">${o.t}</option>`).join('');
+let genTab='ideas';
+document.getElementById('gTabs').addEventListener('click',e=>{
+  const b=e.target.closest('.gtab'); if(!b) return;
+  genTab=b.dataset.t;
+  document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('on',x===b));
+});
+function openGen(){ document.getElementById('gen').classList.add('show'); }
+document.getElementById('btnGen').onclick=openGen;
+document.getElementById('closeG').onclick=()=>document.getElementById('gen').classList.remove('show');
+
+// selecciona los nodos del tema elegido
+function topicNodes(topic){
+  if(topic==='todo') return NODES.filter(n=>!n.insight);
+  if(topic.startsWith('lobe:')){ const l=topic.slice(5); return NODES.filter(n=>n.lobe===l&&!n.insight); }
+  if(topic.startsWith('node:')){ const id=topic.slice(5); const set=new Set([id,...(adj[id]||[])]); return [...set].map(i=>idx[i]).filter(Boolean); }
+  return NODES.filter(n=>!n.insight);
+}
+function topicLabel(topic){ const o=GEN_TOPICS.find(x=>x.id===topic); return o?o.t:'Modelo'; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let lastGen=null; // {kind, title, text}
+
+document.getElementById('gRun').onclick=function(){
+  const topic=selTopic.value, ns=topicNodes(topic), label=topicLabel(topic);
+  const out=document.getElementById('gOut'); out.style.display='block';
+  if(genTab==='ideas') out.innerHTML=genIdeas(label,ns);
+  else if(genTab==='informe') out.innerHTML=genInforme(label,ns);
+  else if(genTab==='grafico') out.innerHTML=genGrafico(label,ns);
+  else out.innerHTML=genTareas(label,ns);
+  wireGenActions(label);
+};
+
+// ---------- IDEAS ----------
+function genIdeas(label, ns){
+  const plantillas=[
+    n=>({t:`Piloto sobre “${n.l.replace(/\n/g,' ')}”`, d:`Diseñar una prueba controlada que aplique ${n.l.replace(/\n/g,' ').toLowerCase()} en una facultad/sede, midiendo impacto y riesgos.`}),
+    n=>({t:`Guía práctica de ${n.l.replace(/\n/g,' ')}`, d:`Elaborar una guía breve que traduzca "${(n.desc||'').slice(0,90)}" en pasos accionables para la comunidad.`}),
+    n=>({t:`Taller de co-creación: ${n.l.replace(/\n/g,' ')}`, d:`Sesión participativa (formato de 4 sesiones incrementales) para madurar lineamientos sobre este componente.`}),
+    n=>({t:`Indicador de seguimiento de ${n.l.replace(/\n/g,' ')}`, d:`Definir una métrica que permita monitorear este elemento en el dashboard de gobernanza.`}),
+  ];
+  const picks=ns.slice(0,6);
+  let h=`<div class="gcard"><h3>💡 Ideas generadas · ${esc(label)}</h3>`+
+    `<p>Ideas derivadas de ${ns.length} conceptos de la base de conocimiento:</p>`;
+  let txt=`IDEAS · ${label}\n\n`;
+  picks.forEach((n,i)=>{ const p=plantillas[i%plantillas.length](n);
+    h+=`<div class="idea" style="--c:${lc(n.id)}"><div class="im">${LOBES[n.lobe].name}</div><b>${esc(p.t)}</b><div style="font-size:12px;color:#dfe6e8;margin-top:3px;">${esc(p.d)}</div></div>`;
+    txt+=`• ${p.t}\n  ${p.d}\n`; });
+  h+=genActionsHtml()+'</div>';
+  lastGen={kind:'Ideas',title:'Ideas · '+label,text:txt};
+  return h;
+}
+
+// ---------- INFORME ----------
+function genInforme(label, ns){
+  const byLobe={}; ns.forEach(n=>{(byLobe[n.lobe]=byLobe[n.lobe]||[]).push(n);});
+  const total=ns.length;
+  let secciones=''; let txt=`INFORME DE GOBERNANZA DE LA IA · ${label}\nUNAL · DNED–DIVULAB · ${new Date().toLocaleDateString()}\n\n`;
+  txt+=`RESUMEN EJECUTIVO\nEste informe sintetiza ${total} componentes del modelo relacionados con "${label}". `+
+       `El modelo articula gobernanza institucional (CNED → Mesa Técnica → Comunidad) con un enfoque multi-agente de valor (Freedom, Equality, Safety, Culture) y estándares de identidad y acceso.\n\n`;
+  Object.entries(byLobe).forEach(([l,arr])=>{
+    secciones+=`<h4>${LOBES[l].name}</h4><ul>`+arr.map(n=>`<li><b>${esc(n.l.replace(/\n/g,' '))}:</b> ${esc((n.desc||'').slice(0,160))}</li>`).join('')+`</ul>`;
+    txt+=`${LOBES[l].name.toUpperCase()}\n`+arr.map(n=>`- ${n.l.replace(/\n/g,' ')}: ${(n.desc||'').slice(0,160)}`).join('\n')+'\n\n';
+  });
+  const rec=['Priorizar los componentes de mayor riesgo a derechos y definir su autoridad de aprobación.',
+             'Aplicar subsidiariedad: decidir en el nivel más cercano al riesgo y al valor.',
+             'Mantener trazabilidad de decisiones (matriz RACI) y registro de deliberaciones.',
+             'Reforzar identidad y acceso de agentes (AI IAM) con mínimo privilegio y auditoría.'];
+  txt+='RECOMENDACIONES\n'+rec.map((r,i)=>`${i+1}. ${r}`).join('\n')+'\n';
+  const h=`<div class="gcard"><h3>📄 Informe · ${esc(label)}</h3>`+
+    `<h4>Resumen ejecutivo</h4><p>Este informe sintetiza <b>${total}</b> componentes del modelo relacionados con “${esc(label)}”, articulando la gobernanza institucional (CNED → Mesa Técnica → Comunidad), el modelo multi-agente de valor y los estándares de identidad y acceso.</p>`+
+    secciones+
+    `<h4>Recomendaciones</h4><ol>`+rec.map(r=>`<li>${esc(r)}</li>`).join('')+`</ol>`+
+    genActionsHtml()+'</div>';
+  lastGen={kind:'Informe',title:'Informe · '+label,text:txt};
+  return h;
+}
+
+// ---------- GRÁFICO (barras SVG profesionales) ----------
+function genGrafico(label, ns){
+  // distribución de conceptos por lóbulo (del conjunto del tema) — o del modelo completo
+  const counts={}; (label==='Todo el modelo'?NODES.filter(n=>!n.insight):ns).forEach(n=>{counts[n.lobe]=(counts[n.lobe]||0)+1;});
+  const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(...rows.map(r=>r[1]),1);
+  let bars=''; let txt=`GRÁFICO · Conceptos por lóbulo · ${label}\n\n`;
+  rows.forEach(([l,c])=>{
+    const pct=Math.round(c/max*100);
+    bars+=`<div class="gbar-row"><div class="gbar-lbl">${LOBES[l].name}</div>`+
+      `<div class="gbar-track"><div class="gbar-fill" style="width:${pct}%;background:linear-gradient(90deg,${LOBES[l].color},${shade(LOBES[l].color,50)})"></div></div>`+
+      `<div class="gbar-val">${c}</div></div>`;
+    txt+=`${LOBES[l].name}: ${c}\n`;
+  });
+  const h=`<div class="gcard"><h3>📊 Gráfico · ${esc(label)}</h3>`+
+    `<p>Distribución de conceptos por lóbulo en la base de conocimiento:</p>${bars}`+
+    `<p style="font-size:11.5px;color:var(--gris);margin-top:10px;">Fuente: ${rows.reduce((s,r)=>s+r[1],0)} nodos del cerebro. El gráfico se recalcula cuando el cerebro evoluciona.</p>`+
+    genActionsHtml()+'</div>';
+  lastGen={kind:'Gráfico',title:'Gráfico · '+label,text:txt};
+  return h;
+}
+
+// ---------- TAREAS ----------
+function genTareas(label, ns){
+  const verbos=['Documentar','Validar con las sedes','Definir indicador para','Capacitar a la comunidad en','Auditar','Elaborar lineamiento de'];
+  const prioColor=['#c0392b','#e8591c','#17a06a']; const prioTxt=['ALTA','MEDIA','BAJA'];
+  const picks=ns.slice(0,7);
+  let items=''; let txt=`PLAN DE TAREAS · ${label}\n\n`;
+  picks.forEach((n,i)=>{
+    const v=verbos[i%verbos.length], pr=i<2?0:(i<4?1:2);
+    const title=`${v} ${n.l.replace(/\n/g,' ').toLowerCase()}`;
+    const resp=({agente:'Mesa Técnica',nucleo:'Plenaria de Delegados',estand:'Núcleo Técnico & Green',concep:'Núcleo Técnico',gob:'CNED / Mesa Técnica',cocre:'DNED–DIVULAB',skill:'DNED–DIVULAB',entre:'DNED–DIVULAB'})[n.lobe]||'Mesa Técnica';
+    items+=`<div class="task"><span class="pri" style="background:${prioColor[pr]}">${prioTxt[pr]}</span>`+
+      `<div><div class="tt">${esc(title)}</div><div class="meta">Responsable sugerido: ${resp} · origen: ${LOBES[n.lobe].name}</div></div></div>`;
+    txt+=`[${prioTxt[pr]}] ${title}\n   Responsable: ${resp}\n`;
+  });
+  const h=`<div class="gcard"><h3>✅ Tareas · ${esc(label)}</h3>`+
+    `<p>Plan de acción derivado de los conceptos del tema (prioridad sugerida y responsable):</p>${items}`+
+    genActionsHtml()+'</div>';
+  lastGen={kind:'Tareas',title:'Tareas · '+label,text:txt};
+  return h;
+}
+
+// acciones comunes: copiar · descargar · guardar como insight
+function genActionsHtml(){
+  return '<div class="gactions"><button id="gCopy">📋 Copiar</button><button id="gDl">⬇ Descargar .txt</button>'+
+    '<button class="prim" id="gSave">🧬 Guardar como insight</button></div>'+
+    '<div id="gMsg" style="font-size:11.5px;color:#8fd3b4;font-style:italic;margin-top:8px;"></div>';
+}
+function wireGenActions(label){
+  const copy=document.getElementById('gCopy'), dl=document.getElementById('gDl'), save=document.getElementById('gSave');
+  if(copy) copy.onclick=()=>{ try{navigator.clipboard.writeText(lastGen.text);document.getElementById('gMsg').textContent='✓ Copiado al portapapeles.';}catch(e){document.getElementById('gMsg').textContent='Selecciona y copia el texto manualmente.';} };
+  if(dl) dl.onclick=()=>{ const blob=new Blob([lastGen.text],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=(lastGen.kind+'-'+label).toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.txt';
+    document.body.appendChild(a);a.click();a.remove();document.getElementById('gMsg').textContent='✓ Archivo descargado.'; };
+  if(save) save.onclick=()=>{
+    insightCount++;
+    const rec={seq:insightCount, case:lastGen.kind+' generado · '+label, lvl:0, involved:['protocolo'],
+               ang:Math.random()*Math.PI*2, rad:150+insightCount*8, ts:Date.now()};
+    insights.push(rec); saveInsights(); spawnInsight(rec,true); refreshGrowth();
+    document.getElementById('gMsg').textContent='🧬 Guardado como insight: el cerebro creció a '+NODES.length+' nodos.';
+  };
 }
 </script>
 </body>
