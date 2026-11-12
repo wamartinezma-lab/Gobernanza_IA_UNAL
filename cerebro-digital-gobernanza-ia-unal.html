@@ -168,6 +168,33 @@
   .gactions button{background:rgba(255,255,255,.08);border:1px solid var(--borde);color:#e9eef0;border-radius:9px;padding:7px 13px;font-size:12.5px;cursor:pointer;}
   .gactions button:hover{background:rgba(255,255,255,.16);}
   .gactions .prim{background:linear-gradient(135deg,#17a06a,#0f8c82);border:none;color:#fff;font-weight:700;}
+  /* previsualizadores interactivos */
+  .gbtns{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px;}
+  .gchip{background:rgba(255,255,255,.06);border:1px solid var(--borde);color:#cfd8da;border-radius:16px;
+    padding:5px 12px;font-size:11.5px;cursor:pointer;transition:.2s;}
+  .gchip.on{background:var(--mesa,#0f8c82);color:#fff;border-color:transparent;}
+  .idea{transition:opacity .2s,transform .2s;}
+  .idea.hide{display:none;}
+  .idea-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .idea-ctrls{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .idea-ctrls label{font-size:10.5px;color:var(--gris);}
+  .idea-ctrls input[type=range]{width:90px;accent-color:var(--mesa,#0f8c82);}
+  .scoreb{font-size:10px;font-weight:800;color:#0e1f1a;background:var(--amarillo);border-radius:10px;padding:2px 8px;}
+  .mini{background:rgba(255,255,255,.08);border:1px solid var(--borde);color:#cfd8da;border-radius:7px;
+    padding:3px 9px;font-size:11px;cursor:pointer;}
+  .mini:hover{background:rgba(255,255,255,.16);}
+  .mini.vote{color:#8fd3b4;} .mini.drop{color:#e59a9a;}
+  .rep-sec h4{cursor:pointer;user-select:none;}
+  .rep-sec h4::before{content:"▾ ";color:var(--dorado);font-size:11px;}
+  .rep-sec.collapsed h4::before{content:"▸ ";}
+  .rep-sec.collapsed .rep-body{display:none;}
+  .rep-meta{font-size:11px;color:var(--gris);margin:6px 0 10px;}
+  .chartbox svg{width:100%;height:auto;display:block;}
+  .bar-seg{transition:width .5s cubic-bezier(.2,.8,.2,1),opacity .2s;cursor:pointer;}
+  .gtip{position:fixed;z-index:40;background:#0a1512;border:1px solid var(--borde);border-radius:8px;
+    padding:6px 10px;font-size:11.5px;color:#eaf0f2;pointer-events:none;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+  .slice{cursor:pointer;transition:opacity .2s,transform .2s;}
+  .slice:hover{opacity:.85;}
 
   .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
   .node{cursor:pointer;}
@@ -305,6 +332,7 @@
   </div>
 </div>
 
+<div class="gtip" id="gTip"></div>
 <div class="hint">🧠 Clic en un nodo · 💬 Preguntar · ✦ Generar (ideas/informe/gráfico/tareas) · ⚖ Deliberar · los pulsos son el “pensamiento”</div>
 
 <script>
@@ -1052,7 +1080,8 @@ document.getElementById('gRun').onclick=function(){
   wireGenActions(label);
 };
 
-// ---------- IDEAS ----------
+// ---------- IDEAS (previsualizador interactivo) ----------
+let ideaState=[];   // {n, t, d, impacto, esfuerzo, voto}
 function genIdeas(label, ns){
   const plantillas=[
     n=>({t:`Piloto sobre “${n.l.replace(/\n/g,' ')}”`, d:`Diseñar una prueba controlada que aplique ${n.l.replace(/\n/g,' ').toLowerCase()} en una facultad/sede, midiendo impacto y riesgos.`}),
@@ -1060,84 +1089,207 @@ function genIdeas(label, ns){
     n=>({t:`Taller de co-creación: ${n.l.replace(/\n/g,' ')}`, d:`Sesión participativa (formato de 4 sesiones incrementales) para madurar lineamientos sobre este componente.`}),
     n=>({t:`Indicador de seguimiento de ${n.l.replace(/\n/g,' ')}`, d:`Definir una métrica que permita monitorear este elemento en el dashboard de gobernanza.`}),
   ];
-  const picks=ns.slice(0,6);
-  let h=`<div class="gcard"><h3>💡 Ideas generadas · ${esc(label)}</h3>`+
-    `<p>Ideas derivadas de ${ns.length} conceptos de la base de conocimiento:</p>`;
-  let txt=`IDEAS · ${label}\n\n`;
-  picks.forEach((n,i)=>{ const p=plantillas[i%plantillas.length](n);
-    h+=`<div class="idea" style="--c:${lc(n.id)}"><div class="im">${LOBES[n.lobe].name}</div><b>${esc(p.t)}</b><div style="font-size:12px;color:#dfe6e8;margin-top:3px;">${esc(p.d)}</div></div>`;
-    txt+=`• ${p.t}\n  ${p.d}\n`; });
-  h+=genActionsHtml()+'</div>';
-  lastGen={kind:'Ideas',title:'Ideas · '+label,text:txt};
+  ideaState=ns.slice(0,8).map((n,i)=>{const p=plantillas[i%plantillas.length](n);
+    return {id:n.id,lobe:n.lobe,t:p.t,d:p.d,impacto:3,esfuerzo:2,voto:0};});
+  const h=`<div class="gcard"><h3>💡 Ideas generadas · ${esc(label)}</h3>`+
+    `<p>Ajusta <b>impacto</b> y <b>esfuerzo</b> con los deslizadores; las ideas se reordenan por prioridad en vivo. Vota 👍 / descarta, filtra por lóbulo y haz clic en «ver en el grafo».</p>`+
+    `<div class="gbtns" id="ideaFilters"></div>`+
+    `<div id="ideaList"></div>`+
+    genActionsHtml()+'</div>';
+  lastGen={kind:'Ideas',title:'Ideas · '+label,text:ideaText(label)};
+  // render diferido tras inyectar el HTML
+  setTimeout(()=>renderIdeas(label),0);
   return h;
 }
+function ideaScore(x){ return x.impacto*2 - x.esfuerzo + x.voto*1.5; }   // prioridad
+function ideaText(label){
+  const sorted=[...ideaState].filter(x=>x.voto>=0).sort((a,b)=>ideaScore(b)-ideaScore(a));
+  return `IDEAS · ${label}\n\n`+sorted.map(x=>`• [prioridad ${ideaScore(x).toFixed(1)}] ${x.t}\n  ${x.d}\n  impacto=${x.impacto} esfuerzo=${x.esfuerzo}`).join('\n');
+}
+function renderIdeas(label){
+  const list=document.getElementById('ideaList'); if(!list) return;
+  // filtros por lóbulo
+  const lobes=[...new Set(ideaState.map(x=>x.lobe))];
+  const ff=document.getElementById('ideaFilters');
+  if(ff && !ff.dataset.done){
+    ff.innerHTML='<span class="gchip on" data-f="all">Todos</span>'+lobes.map(l=>`<span class="gchip" data-f="${l}">${LOBES[l].name}</span>`).join('');
+    ff.dataset.done='1'; ff.dataset.filter='all';
+    ff.querySelectorAll('.gchip').forEach(c=>c.onclick=()=>{ff.querySelectorAll('.gchip').forEach(x=>x.classList.remove('on'));c.classList.add('on');ff.dataset.filter=c.dataset.f;renderIdeas(label);});
+  }
+  const filt=ff?ff.dataset.filter:'all';
+  const sorted=[...ideaState].sort((a,b)=>ideaScore(b)-ideaScore(a));
+  list.innerHTML=sorted.map((x)=>{
+    const hide = x.voto<0 || (filt!=='all'&&x.lobe!==filt);
+    return `<div class="idea${hide?' hide':''}" style="--c:${LOBES[x.lobe].color}" data-id="${x.id}">`+
+      `<div class="idea-head"><b>${esc(x.t)}</b><span class="scoreb">★ ${ideaScore(x).toFixed(1)}</span></div>`+
+      `<div class="im">${LOBES[x.lobe].name}</div>`+
+      `<div style="font-size:12px;color:#dfe6e8;margin-top:3px;">${esc(x.d)}</div>`+
+      `<div class="idea-ctrls">`+
+        `<label>impacto</label><input type="range" min="1" max="5" value="${x.impacto}" data-k="impacto" data-id="${x.id}">`+
+        `<label>esfuerzo</label><input type="range" min="1" max="5" value="${x.esfuerzo}" data-k="esfuerzo" data-id="${x.id}">`+
+        `<button class="mini vote" data-act="vote" data-id="${x.id}">👍 ${x.voto>0?'('+x.voto+')':''}</button>`+
+        `<button class="mini drop" data-act="drop" data-id="${x.id}">✕ descartar</button>`+
+        `<button class="mini" data-act="go" data-id="${x.id}">🔎 ver en el grafo</button>`+
+      `</div></div>`;
+  }).join('');
+  // sliders
+  list.querySelectorAll('input[type=range]').forEach(r=>r.oninput=()=>{
+    const it=ideaState.find(x=>x.id===r.dataset.id); it[r.dataset.k]=+r.value;
+    lastGen.text=ideaText(label); renderIdeas(label);
+  });
+  // botones
+  list.querySelectorAll('.mini').forEach(b=>b.onclick=()=>{
+    const it=ideaState.find(x=>x.id===b.dataset.id);
+    if(b.dataset.act==='vote'){ it.voto+=1; feedback([it.id],+1); }
+    else if(b.dataset.act==='drop'){ it.voto=-1; }
+    else if(b.dataset.act==='go'){ document.getElementById('gen').classList.remove('show'); select(it.id); return; }
+    lastGen.text=ideaText(label); renderIdeas(label);
+  });
+}
 
-// ---------- INFORME ----------
+// ---------- INFORME (previsualizador: secciones colapsables + resaltar riesgo) ----------
+let repState=null;
 function genInforme(label, ns){
   const byLobe={}; ns.forEach(n=>{(byLobe[n.lobe]=byLobe[n.lobe]||[]).push(n);});
-  const total=ns.length;
-  let secciones=''; let txt=`INFORME DE GOBERNANZA DE LA IA · ${label}\nUNAL · DNED–DIVULAB · ${new Date().toLocaleDateString()}\n\n`;
-  txt+=`RESUMEN EJECUTIVO\nEste informe sintetiza ${total} componentes del modelo relacionados con "${label}". `+
-       `El modelo articula gobernanza institucional (CNED → Mesa Técnica → Comunidad) con un enfoque multi-agente de valor (Freedom, Equality, Safety, Culture) y estándares de identidad y acceso.\n\n`;
-  Object.entries(byLobe).forEach(([l,arr])=>{
-    secciones+=`<h4>${LOBES[l].name}</h4><ul>`+arr.map(n=>`<li><b>${esc(n.l.replace(/\n/g,' '))}:</b> ${esc((n.desc||'').slice(0,160))}</li>`).join('')+`</ul>`;
-    txt+=`${LOBES[l].name.toUpperCase()}\n`+arr.map(n=>`- ${n.l.replace(/\n/g,' ')}: ${(n.desc||'').slice(0,160)}`).join('\n')+'\n\n';
-  });
-  const rec=['Priorizar los componentes de mayor riesgo a derechos y definir su autoridad de aprobación.',
-             'Aplicar subsidiariedad: decidir en el nivel más cercano al riesgo y al valor.',
-             'Mantener trazabilidad de decisiones (matriz RACI) y registro de deliberaciones.',
-             'Reforzar identidad y acceso de agentes (AI IAM) con mínimo privilegio y auditoría.'];
-  txt+='RECOMENDACIONES\n'+rec.map((r,i)=>`${i+1}. ${r}`).join('\n')+'\n';
-  const h=`<div class="gcard"><h3>📄 Informe · ${esc(label)}</h3>`+
-    `<h4>Resumen ejecutivo</h4><p>Este informe sintetiza <b>${total}</b> componentes del modelo relacionados con “${esc(label)}”, articulando la gobernanza institucional (CNED → Mesa Técnica → Comunidad), el modelo multi-agente de valor y los estándares de identidad y acceso.</p>`+
-    secciones+
-    `<h4>Recomendaciones</h4><ol>`+rec.map(r=>`<li>${esc(r)}</li>`).join('')+`</ol>`+
-    genActionsHtml()+'</div>';
-  lastGen={kind:'Informe',title:'Informe · '+label,text:txt};
+  repState={label, byLobe, total:ns.length, showRec:true, highlightRisk:false};
+  const h=`<div class="gcard" id="repCard"><h3>📄 Informe · ${esc(label)}</h3>`+
+    `<div class="gbtns"><span class="gchip on" id="tgRec">✓ Recomendaciones</span>`+
+    `<span class="gchip" id="tgRisk">⚠ Resaltar riesgo</span>`+
+    `<span class="gchip" id="tgAll">⊟ Colapsar todo</span></div>`+
+    `<div id="repBody"></div>`+genActionsHtml()+'</div>';
+  setTimeout(()=>renderInforme(),0);
   return h;
 }
+const REC=['Priorizar los componentes de mayor riesgo a derechos y definir su autoridad de aprobación.',
+           'Aplicar subsidiariedad: decidir en el nivel más cercano al riesgo y al valor.',
+           'Mantener trazabilidad de decisiones (matriz RACI) y registro de deliberaciones.',
+           'Reforzar identidad y acceso de agentes (AI IAM) con mínimo privilegio y auditoría.'];
+function informeText(){
+  const s=repState; let txt=`INFORME DE GOBERNANZA DE LA IA · ${s.label}\nUNAL · DNED–DIVULAB · ${new Date().toLocaleDateString()}\n\n`;
+  txt+=`RESUMEN EJECUTIVO\nEste informe sintetiza ${s.total} componentes del modelo relacionados con "${s.label}".\n\n`;
+  Object.entries(s.byLobe).forEach(([l,arr])=>{txt+=`${LOBES[l].name.toUpperCase()}\n`+arr.map(n=>`- ${n.l.replace(/\n/g,' ')}: ${(n.desc||'').slice(0,160)}`).join('\n')+'\n\n';});
+  if(s.showRec) txt+='RECOMENDACIONES\n'+REC.map((r,i)=>`${i+1}. ${r}`).join('\n')+'\n';
+  return txt;
+}
+function renderInforme(){
+  const s=repState, body=document.getElementById('repBody'); if(!body) return;
+  const riskLobes=['nucleo','agente'];
+  let html=`<div class="rep-sec"><h4>Resumen ejecutivo</h4><div class="rep-body"><p>Este informe sintetiza <b>${s.total}</b> componentes del modelo relacionados con “${esc(s.label)}”, articulando la gobernanza institucional (CNED → Mesa Técnica → Comunidad), el modelo multi-agente de valor y los estándares de identidad y acceso.</p></div></div>`;
+  Object.entries(s.byLobe).forEach(([l,arr])=>{
+    const risk = s.highlightRisk && riskLobes.includes(l);
+    html+=`<div class="rep-sec"${risk?' style="outline:1px solid rgba(232,89,28,.5);border-radius:10px;padding:4px 8px;"':''}>`+
+      `<h4>${LOBES[l].name}${risk?' ⚠':''}</h4><div class="rep-body"><div class="rep-meta">${arr.length} componente(s)</div><ul>`+
+      arr.map(n=>`<li><b>${esc(n.l.replace(/\n/g,' '))}:</b> ${esc((n.desc||'').slice(0,160))}</li>`).join('')+`</ul></div></div>`;
+  });
+  if(s.showRec) html+=`<div class="rep-sec"><h4>Recomendaciones</h4><div class="rep-body"><ol>`+REC.map(r=>`<li>${esc(r)}</li>`).join('')+`</ol></div></div>`;
+  body.innerHTML=html;
+  body.querySelectorAll('.rep-sec h4').forEach(hd=>hd.onclick=()=>hd.parentNode.classList.toggle('collapsed'));
+  lastGen.text=informeText();
+  // toggles
+  const r=document.getElementById('tgRec'); if(r) r.onclick=()=>{s.showRec=!s.showRec;r.classList.toggle('on',s.showRec);r.textContent=(s.showRec?'✓':'✗')+' Recomendaciones';renderInforme();};
+  const rk=document.getElementById('tgRisk'); if(rk) rk.onclick=()=>{s.highlightRisk=!s.highlightRisk;rk.classList.toggle('on',s.highlightRisk);renderInforme();};
+  const all=document.getElementById('tgAll'); if(all) all.onclick=()=>{const secs=body.querySelectorAll('.rep-sec');const anyOpen=[...secs].some(x=>!x.classList.contains('collapsed'));secs.forEach(x=>x.classList.toggle('collapsed',anyOpen));all.textContent=anyOpen?'⊞ Expandir todo':'⊟ Colapsar todo';};
+}
 
-// ---------- GRÁFICO (barras SVG profesionales) ----------
+// ---------- GRÁFICO (previsualizador: barras / dona / radar, con tooltips) ----------
+let chartState=null;
 function genGrafico(label, ns){
-  // distribución de conceptos por lóbulo (del conjunto del tema) — o del modelo completo
   const counts={}; (label==='Todo el modelo'?NODES.filter(n=>!n.insight):ns).forEach(n=>{counts[n.lobe]=(counts[n.lobe]||0)+1;});
   const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  const max=Math.max(...rows.map(r=>r[1]),1);
-  let bars=''; let txt=`GRÁFICO · Conceptos por lóbulo · ${label}\n\n`;
-  rows.forEach(([l,c])=>{
-    const pct=Math.round(c/max*100);
-    bars+=`<div class="gbar-row"><div class="gbar-lbl">${LOBES[l].name}</div>`+
-      `<div class="gbar-track"><div class="gbar-fill" style="width:${pct}%;background:linear-gradient(90deg,${LOBES[l].color},${shade(LOBES[l].color,50)})"></div></div>`+
-      `<div class="gbar-val">${c}</div></div>`;
-    txt+=`${LOBES[l].name}: ${c}\n`;
-  });
-  const h=`<div class="gcard"><h3>📊 Gráfico · ${esc(label)}</h3>`+
-    `<p>Distribución de conceptos por lóbulo en la base de conocimiento:</p>${bars}`+
-    `<p style="font-size:11.5px;color:var(--gris);margin-top:10px;">Fuente: ${rows.reduce((s,r)=>s+r[1],0)} nodos del cerebro. El gráfico se recalcula cuando el cerebro evoluciona.</p>`+
-    genActionsHtml()+'</div>';
+  chartState={label, rows, type:'bar'};
+  let txt=`GRÁFICO · Conceptos por lóbulo · ${label}\n\n`+rows.map(([l,c])=>`${LOBES[l].name}: ${c}`).join('\n');
   lastGen={kind:'Gráfico',title:'Gráfico · '+label,text:txt};
+  const h=`<div class="gcard"><h3>📊 Gráfico · ${esc(label)}</h3>`+
+    `<div class="gbtns" id="chartTabs"><span class="gchip on" data-c="bar">▤ Barras</span>`+
+    `<span class="gchip" data-c="dona">◕ Dona</span><span class="gchip" data-c="radar">◈ Radar</span></div>`+
+    `<div class="chartbox" id="chartBox"></div>`+
+    `<p style="font-size:11.5px;color:var(--gris);margin-top:10px;">Fuente: ${rows.reduce((s,r)=>s+r[1],0)} nodos del cerebro · pasa el mouse para ver valores · clic en un segmento para resaltar ese lóbulo en el grafo. Se recalcula cuando el cerebro evoluciona.</p>`+
+    genActionsHtml()+'</div>';
+  setTimeout(()=>{ drawChart(); const tabs=document.getElementById('chartTabs');
+    tabs.querySelectorAll('.gchip').forEach(c=>c.onclick=()=>{tabs.querySelectorAll('.gchip').forEach(x=>x.classList.remove('on'));c.classList.add('on');chartState.type=c.dataset.c;drawChart();});
+  },0);
   return h;
 }
+function tip(ev,html){ const t=document.getElementById('gTip'); if(html){t.style.display='block';t.innerHTML=html;t.style.left=(ev.clientX+12)+'px';t.style.top=(ev.clientY+12)+'px';} else t.style.display='none'; }
+function goLobe(l){ document.getElementById('gen').classList.remove('show'); const n=NODES.find(x=>x.lobe===l); if(n) select(n.id); }
+function drawChart(){
+  const box=document.getElementById('chartBox'); if(!box||!chartState) return;
+  const {rows,type}=chartState, total=rows.reduce((s,r)=>s+r[1],0), max=Math.max(...rows.map(r=>r[1]),1);
+  const C=l=>LOBES[l].color;
+  if(type==='bar'){
+    let svg='<svg viewBox="0 0 520 '+(rows.length*34+12)+'">';
+    rows.forEach(([l,c],i)=>{const y=i*34+6,w=Math.round(c/max*300);
+      svg+=`<rect x="170" y="${y}" width="340" height="22" rx="6" fill="rgba(255,255,255,.06)"/>`+
+        `<rect class="bar-seg" x="170" y="${y}" width="${w}" height="22" rx="6" fill="${C(l)}" data-l="${l}"/>`+
+        `<text x="162" y="${y+15}" text-anchor="end" font-size="11" fill="#cfd8da" font-family="Segoe UI">${LOBES[l].name.slice(0,22)}</text>`+
+        `<text x="${175+w}" y="${y+15}" font-size="11" font-weight="700" fill="#eaf0f2" font-family="Segoe UI">${c}</text>`;});
+    svg+='</svg>'; box.innerHTML=svg;
+  } else if(type==='dona'){
+    const cx=160,cy=150,R=120,r=60; let a0=-Math.PI/2,paths='';
+    rows.forEach(([l,c])=>{const frac=c/total,a1=a0+frac*2*Math.PI;
+      const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+      const xi0=cx+r*Math.cos(a1),yi0=cy+r*Math.sin(a1),xi1=cx+r*Math.cos(a0),yi1=cy+r*Math.sin(a0);
+      const large=frac>0.5?1:0;
+      paths+=`<path class="slice" d="M${x0} ${y0} A${R} ${R} 0 ${large} 1 ${x1} ${y1} L${xi0} ${yi0} A${r} ${r} 0 ${large} 0 ${xi1} ${yi1} Z" fill="${C(l)}" data-l="${l}" data-c="${c}"/>`;
+      a0=a1;});
+    let leg='';rows.forEach(([l,c],i)=>{leg+=`<g transform="translate(330,${30+i*26})"><rect width="13" height="13" rx="3" fill="${C(l)}"/><text x="19" y="11" font-size="11" fill="#cfd8da" font-family="Segoe UI">${LOBES[l].name.slice(0,22)} (${c})</text></g>`;});
+    box.innerHTML=`<svg viewBox="0 0 520 300">${paths}<text x="160" y="155" text-anchor="middle" font-size="22" font-weight="800" fill="#eaf0f2" font-family="Segoe UI">${total}</text><text x="160" y="172" text-anchor="middle" font-size="9" fill="#8a93a6" font-family="Segoe UI">NODOS</text>${leg}</svg>`;
+  } else { // radar
+    const cx=260,cy=155,R=120,N=rows.length;
+    let grid='';for(let g=1;g<=4;g++){let pts='';for(let i=0;i<N;i++){const a=-Math.PI/2+i*2*Math.PI/N,rr=R*g/4;pts+=(cx+rr*Math.cos(a))+','+(cy+rr*Math.sin(a))+' ';}grid+=`<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.1)"/>`;}
+    let axes='',poly='',dots='';rows.forEach(([l,c],i)=>{const a=-Math.PI/2+i*2*Math.PI/N,rr=R*(c/max);
+      const px=cx+rr*Math.cos(a),py=cy+rr*Math.sin(a);
+      axes+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(a)}" y2="${cy+R*Math.sin(a)}" stroke="rgba(255,255,255,.1)"/>`+
+        `<text x="${cx+(R+14)*Math.cos(a)}" y="${cy+(R+14)*Math.sin(a)}" font-size="9" fill="#9fb0b4" text-anchor="middle" font-family="Segoe UI">${LOBES[l].name.slice(0,10)}</text>`;
+      poly+=px+','+py+' '; dots+=`<circle class="slice" cx="${px}" cy="${py}" r="4" fill="${C(l)}" data-l="${l}" data-c="${c}"/>`;});
+    box.innerHTML=`<svg viewBox="0 0 520 320">${grid}${axes}<polygon points="${poly}" fill="rgba(184,147,71,.25)" stroke="#b89347" stroke-width="2"/>${dots}</svg>`;
+  }
+  // tooltips + click en segmentos
+  box.querySelectorAll('[data-l]').forEach(el=>{
+    const l=el.dataset.l, c=el.dataset.c||rows.find(r=>r[0]===l)[1];
+    el.addEventListener('mousemove',ev=>tip(ev,`<b>${LOBES[l].name}</b><br>${c} nodo(s) · ${Math.round(c/total*100)}%`));
+    el.addEventListener('mouseleave',()=>tip(null));
+    el.addEventListener('click',()=>goLobe(l));
+  });
+}
 
-// ---------- TAREAS ----------
+// ---------- TAREAS (previsualizador: completar + progreso en vivo) ----------
+let taskState=[];
 function genTareas(label, ns){
   const verbos=['Documentar','Validar con las sedes','Definir indicador para','Capacitar a la comunidad en','Auditar','Elaborar lineamiento de'];
-  const prioColor=['#c0392b','#e8591c','#17a06a']; const prioTxt=['ALTA','MEDIA','BAJA'];
-  const picks=ns.slice(0,7);
-  let items=''; let txt=`PLAN DE TAREAS · ${label}\n\n`;
-  picks.forEach((n,i)=>{
-    const v=verbos[i%verbos.length], pr=i<2?0:(i<4?1:2);
-    const title=`${v} ${n.l.replace(/\n/g,' ').toLowerCase()}`;
+  const prioTxt=['ALTA','MEDIA','BAJA'];
+  taskState=ns.slice(0,7).map((n,i)=>{
+    const pr=i<2?0:(i<4?1:2);
     const resp=({agente:'Mesa Técnica',nucleo:'Plenaria de Delegados',estand:'Núcleo Técnico & Green',concep:'Núcleo Técnico',gob:'CNED / Mesa Técnica',cocre:'DNED–DIVULAB',skill:'DNED–DIVULAB',entre:'DNED–DIVULAB'})[n.lobe]||'Mesa Técnica';
-    items+=`<div class="task"><span class="pri" style="background:${prioColor[pr]}">${prioTxt[pr]}</span>`+
-      `<div><div class="tt">${esc(title)}</div><div class="meta">Responsable sugerido: ${resp} · origen: ${LOBES[n.lobe].name}</div></div></div>`;
-    txt+=`[${prioTxt[pr]}] ${title}\n   Responsable: ${resp}\n`;
+    return {id:n.id,lobe:n.lobe,title:`${verbos[i%verbos.length]} ${n.l.replace(/\n/g,' ').toLowerCase()}`,pr,prTxt:prioTxt[pr],resp,done:false};
   });
   const h=`<div class="gcard"><h3>✅ Tareas · ${esc(label)}</h3>`+
-    `<p>Plan de acción derivado de los conceptos del tema (prioridad sugerida y responsable):</p>${items}`+
-    genActionsHtml()+'</div>';
-  lastGen={kind:'Tareas',title:'Tareas · '+label,text:txt};
+    `<p>Plan de acción interactivo: marca tareas como completadas y filtra por prioridad; el progreso se actualiza en vivo.</p>`+
+    `<div class="gbtns" id="taskFilters"><span class="gchip on" data-p="all">Todas</span><span class="gchip" data-p="0">ALTA</span><span class="gchip" data-p="1">MEDIA</span><span class="gchip" data-p="2">BAJA</span></div>`+
+    `<div class="gbar-row" style="margin-bottom:12px;"><div class="gbar-lbl">Progreso</div><div class="gbar-track"><div class="gbar-fill" id="taskProg" style="width:0%;background:linear-gradient(90deg,#17a06a,#0f8c82)"></div></div><div class="gbar-val" id="taskPct">0%</div></div>`+
+    `<div id="taskList"></div>`+genActionsHtml()+'</div>';
+  lastGen={kind:'Tareas',title:'Tareas · '+label,text:taskText(label)};
+  setTimeout(()=>renderTasks(label),0);
   return h;
+}
+function taskText(label){ return `PLAN DE TAREAS · ${label}\n\n`+taskState.map(t=>`[${t.done?'x':' '}] [${t.prTxt}] ${t.title}\n   Responsable: ${t.resp}`).join('\n'); }
+function renderTasks(label){
+  const list=document.getElementById('taskList'); if(!list) return;
+  const ff=document.getElementById('taskFilters'); const filt=ff?ff.dataset.p||'all':'all';
+  const prioColor=['#c0392b','#e8591c','#17a06a'];
+  list.innerHTML=taskState.map(t=>{
+    const hide=filt!=='all'&&String(t.pr)!==filt;
+    return `<div class="task${hide?' hide':''}" style="${t.done?'opacity:.55;':''}">`+
+      `<input type="checkbox" ${t.done?'checked':''} data-id="${t.id}" style="margin-top:3px;accent-color:#17a06a;">`+
+      `<span class="pri" style="background:${prioColor[t.pr]}">${t.prTxt}</span>`+
+      `<div><div class="tt" style="${t.done?'text-decoration:line-through;':''}">${esc(t.title)}</div>`+
+      `<div class="meta">Responsable sugerido: ${t.resp} · origen: ${LOBES[t.lobe].name}</div></div></div>`;
+  }).join('');
+  list.querySelectorAll('input[type=checkbox]').forEach(c=>c.onchange=()=>{const t=taskState.find(x=>x.id===c.dataset.id);t.done=c.checked;lastGen.text=taskText(label);renderTasks(label);});
+  if(ff && !ff.dataset.done){ff.dataset.done='1';ff.querySelectorAll('.gchip').forEach(ch=>ch.onclick=()=>{ff.querySelectorAll('.gchip').forEach(x=>x.classList.remove('on'));ch.classList.add('on');ff.dataset.p=ch.dataset.p;renderTasks(label);});}
+  const done=taskState.filter(t=>t.done).length, pct=Math.round(done/taskState.length*100);
+  const pb=document.getElementById('taskProg'), pv=document.getElementById('taskPct');
+  if(pb){pb.style.width=pct+'%';} if(pv){pv.textContent=pct+'% ('+done+'/'+taskState.length+')';}
 }
 
 // acciones comunes: copiar · descargar · guardar como insight
