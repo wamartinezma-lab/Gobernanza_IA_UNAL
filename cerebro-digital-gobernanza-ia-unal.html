@@ -195,6 +195,20 @@
     padding:6px 10px;font-size:11.5px;color:#eaf0f2;pointer-events:none;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5);}
   .slice{cursor:pointer;transition:opacity .2s,transform .2s;}
   .slice:hover{opacity:.85;}
+  /* subgrafo dinámico */
+  .sg-wrap{background:#0a1512;border:1px solid var(--borde);border-radius:12px;overflow:hidden;position:relative;}
+  .sg-wrap svg{width:100%;height:420px;display:block;cursor:grab;}
+  .sg-wrap svg:active{cursor:grabbing;}
+  .sg-node{cursor:pointer;}
+  .sg-node circle{transition:stroke-width .15s,r .15s;}
+  .sg-node.sel circle{stroke:#e8c341;stroke-width:3;}
+  .sg-node text{fill:#e9eef0;font-size:10px;font-family:'Segoe UI';text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#0a1512;stroke-width:3px;}
+  .sg-edge{stroke:#44525a;stroke-width:1.4;transition:stroke .2s,stroke-width .2s;}
+  .sg-edge.hot{stroke:#e8c341;stroke-width:2.6;}
+  .sg-bar{display:flex;gap:6px;flex-wrap:wrap;padding:8px;border-bottom:1px solid var(--borde);background:rgba(255,255,255,.03);}
+  .sg-info{padding:10px 12px;border-top:1px solid var(--borde);font-size:12px;color:#cfd8da;min-height:42px;}
+  .sg-info b{color:#fff;} .sg-info .sgl{font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:.8px;}
+  .sg-count{font-size:11px;color:var(--gris);padding:6px 10px;}
 
   .edge{stroke-linecap:round;transition:stroke-opacity .3s,stroke-width .3s;}
   .node{cursor:pointer;}
@@ -320,12 +334,17 @@
         <button class="gtab on" data-t="ideas">💡 Ideas</button>
         <button class="gtab" data-t="informe">📄 Informe</button>
         <button class="gtab" data-t="grafico">📊 Gráfico</button>
+        <button class="gtab" data-t="grafo">🕸 Grafo</button>
         <button class="gtab" data-t="tareas">✅ Tareas</button>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0;">
         <label style="font-size:12px;color:#cfd8da;">Tema / foco:</label>
-        <select id="gTopic" style="flex:1;min-width:220px;background:#0a1512;border:1px solid var(--borde);border-radius:9px;color:#e9eef0;padding:8px 10px;font-size:13px;"></select>
+        <select id="gTopic" style="flex:1;min-width:200px;background:#0a1512;border:1px solid var(--borde);border-radius:9px;color:#e9eef0;padding:8px 10px;font-size:13px;"></select>
         <button class="run" id="gRun" style="margin:0;">Generar ▶</button>
+      </div>
+      <div id="gQueryRow" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px;">
+        <label style="font-size:12px;color:#cfd8da;">o por necesidad de información:</label>
+        <input id="gQuery" placeholder="Ej.: cómo se decide un caso de alto riesgo con datos sensibles" style="flex:1;min-width:240px;background:#0a1512;border:1px solid var(--borde);border-radius:9px;color:#e9eef0;padding:8px 10px;font-size:13px;">
       </div>
       <div id="gOut" style="display:none;"></div>
     </div>
@@ -1053,6 +1072,7 @@ document.getElementById('gTabs').addEventListener('click',e=>{
   const b=e.target.closest('.gtab'); if(!b) return;
   genTab=b.dataset.t;
   document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('on',x===b));
+  document.getElementById('gQueryRow').style.display = (genTab==='grafo') ? 'flex' : 'none';
 });
 function openGen(){ document.getElementById('gen').classList.add('show'); }
 document.getElementById('btnGen').onclick=openGen;
@@ -1076,6 +1096,7 @@ document.getElementById('gRun').onclick=function(){
   if(genTab==='ideas') out.innerHTML=genIdeas(label,ns);
   else if(genTab==='informe') out.innerHTML=genInforme(label,ns);
   else if(genTab==='grafico') out.innerHTML=genGrafico(label,ns);
+  else if(genTab==='grafo') out.innerHTML=genGrafo(label,ns);
   else out.innerHTML=genTareas(label,ns);
   wireGenActions(label);
 };
@@ -1251,6 +1272,144 @@ function drawChart(){
     el.addEventListener('mouseleave',()=>tip(null));
     el.addEventListener('click',()=>goLobe(l));
   });
+}
+
+// ---------- GRAFO DINÁMICO (subgrafo consultable y manipulable) ----------
+let sg=null; // {ids:Set, pos:{}, sel, vb, selCanvas}
+function subgraphFrom(label, ns){
+  const q=(document.getElementById('gQuery').value||'').trim();
+  let seed;
+  if(q){ const r=retrieve(q,5); seed=r.length?r.map(o=>o.n.id):ns.map(n=>n.id); }
+  else seed=ns.map(n=>n.id);
+  const set=new Set(seed);
+  // incluir vecinos inmediatos del semillero para dar contexto de relaciones
+  seed.forEach(id=>{ (adj[id]||[]).forEach(v=>set.add(v)); });
+  return {ids:set, q};
+}
+function genGrafo(label, ns){
+  const {ids,q}=subgraphFrom(label,ns);
+  sg={ids, pos:{}, sel:null};
+  const title = q ? 'Grafo de la consulta' : 'Grafo de '+label;
+  const h=`<div class="gcard"><h3>🕸 ${esc(title)}</h3>`+
+    `<p>${q?('Subgrafo construido desde tu necesidad de información: <i>“'+esc(q)+'”</i>. '):'Subgrafo del tema seleccionado. '}`+
+    `Arrastra nodos, haz <b>clic</b> para consultar, <b>doble clic</b> para expandir vecinos, y usa los filtros.</p>`+
+    `<div class="sg-wrap">`+
+      `<div class="sg-bar" id="sgBar"></div>`+
+      `<svg id="sgSvg" viewBox="0 0 640 420"><g id="sgEdges"></g><g id="sgNodes"></g></svg>`+
+      `<div class="sg-info" id="sgInfo">Selecciona un nodo para consultar su rol y conexiones.</div>`+
+    `</div>`+
+    `<div class="sg-count" id="sgCount"></div>`+
+    genActionsHtml()+'</div>';
+  lastGen={kind:'Grafo',title:title,text:grafoText(title)};
+  setTimeout(()=>{ layoutSG(); renderSG(label); buildSgBar(label); },0);
+  return h;
+}
+function grafoText(title){
+  if(!sg) return title;
+  const nodes=[...sg.ids].map(i=>idx[i]).filter(Boolean);
+  let t=title+'\n\nNODOS ('+nodes.length+'):\n'+nodes.map(n=>'- '+n.l.replace(/\n/g,' ')+' ['+LOBES[n.lobe].name+']').join('\n');
+  const es=subEdges(); t+='\n\nRELACIONES ('+es.length+'):\n'+es.map(e=>'- '+idx[e[0]].l.replace(/\n/g,' ')+' ↔ '+idx[e[1]].l.replace(/\n/g,' ')).join('\n');
+  return t;
+}
+function subEdges(){ return EDGES.filter(([a,b])=>sg.ids.has(a)&&sg.ids.has(b)); }
+function layoutSG(){
+  const list=[...sg.ids]; const cx=320,cy=200;
+  // hub (el de mayor grado dentro del subgrafo) al centro, resto en círculo
+  let hub=list[0],best=-1;
+  list.forEach(id=>{ const d=[...(adj[id]||[])].filter(v=>sg.ids.has(v)).length; if(d>best){best=d;hub=id;} });
+  const others=list.filter(id=>id!==hub);
+  sg.pos[hub]={x:cx,y:cy};
+  others.forEach((id,i)=>{ const a=i/others.length*2*Math.PI; sg.pos[id]={x:cx+Math.cos(a)*200,y:cy+Math.sin(a)*150}; });
+}
+function renderSG(label){
+  const gN=document.getElementById('sgNodes'), gE=document.getElementById('sgEdges'); if(!gN) return;
+  const NSs='http://www.w3.org/2000/svg';
+  gE.innerHTML=''; gN.innerHTML='';
+  subEdges().forEach(([a,b])=>{ const p=sg.pos[a],q=sg.pos[b]; if(!p||!q)return;
+    const ln=document.createElementNS(NSs,'line'); ln.setAttribute('x1',p.x);ln.setAttribute('y1',p.y);ln.setAttribute('x2',q.x);ln.setAttribute('y2',q.y);
+    ln.setAttribute('class','sg-edge'); ln.dataset.a=a;ln.dataset.b=b; gE.appendChild(ln); });
+  [...sg.ids].forEach(id=>{ const n=idx[id],p=sg.pos[id]; if(!n||!p)return;
+    const g=document.createElementNS(NSs,'g'); g.setAttribute('class','sg-node'+(sg.sel===id?' sel':'')); g.setAttribute('transform',`translate(${p.x},${p.y})`); g.dataset.id=id;
+    const c=document.createElementNS(NSs,'circle'); const r=n.hub?17:12;
+    c.setAttribute('r',r); c.setAttribute('fill',LOBES[n.lobe].color); c.setAttribute('stroke','rgba(255,255,255,.7)'); c.setAttribute('stroke-width','1.3'); g.appendChild(c);
+    const t=document.createElementNS(NSs,'text'); t.setAttribute('y',r+12); t.textContent=n.l.replace(/\n/g,' ').slice(0,20); g.appendChild(t);
+    gN.appendChild(g);
+    g.addEventListener('mousedown',ev=>startDragSG(ev,id));
+    g.addEventListener('click',ev=>{ ev.stopPropagation(); if(!sg._moved) selectSG(id,label); });
+    g.addEventListener('dblclick',ev=>{ ev.stopPropagation(); expandSG(id,label); });
+  });
+  document.getElementById('sgCount').textContent=sg.ids.size+' nodos · '+subEdges().length+' relaciones en el subgrafo';
+  lastGen.text=grafoText(lastGen.title);
+}
+function selectSG(id,label){
+  sg.sel=id; renderSG(label);
+  const n=idx[id]; const neigh=[...(adj[id]||[])].filter(v=>sg.ids.has(v)).map(v=>idx[v].l.replace(/\n/g,' '));
+  // resaltar aristas del nodo
+  document.querySelectorAll('#sgEdges .sg-edge').forEach(e=>e.classList.toggle('hot',e.dataset.a===id||e.dataset.b===id));
+  document.getElementById('sgInfo').innerHTML=`<div class="sgl">${LOBES[n.lobe].name}</div><b>${esc(n.l.replace(/\n/g,' '))}</b> — ${esc((n.desc||'').slice(0,160))}`+
+    (neigh.length?`<br><span class="sgl">conecta con:</span> ${esc(neigh.join(' · '))}`:'')+
+    `<br><a href="#" id="sgGo" style="color:#e8c341;">ver en el cerebro principal ↗</a>`;
+  const go=document.getElementById('sgGo'); if(go) go.onclick=(e)=>{e.preventDefault();document.getElementById('gen').classList.remove('show');select(id);};
+}
+function expandSG(id,label){ // agrega vecinos del nodo al subgrafo (consulta/manipulación)
+  let added=0; (adj[id]||[]).forEach(v=>{ if(!sg.ids.has(v)){ sg.ids.add(v); const base=sg.pos[id]; const a=Math.random()*2*Math.PI;
+    sg.pos[v]={x:Math.max(30,Math.min(610,base.x+Math.cos(a)*90)),y:Math.max(30,Math.min(390,base.y+Math.sin(a)*90))}; added++; } });
+  renderSG(label); buildSgBar(label);
+  if(added) document.getElementById('sgInfo').innerHTML=`Expandido: +${added} vecino(s) de <b>${esc(idx[id].l.replace(/\n/g,' '))}</b>.`;
+}
+function removeSG(id,label){ sg.ids.delete(id); delete sg.pos[id]; if(sg.sel===id) sg.sel=null; renderSG(label); buildSgBar(label); }
+// arrastre de nodos del subgrafo
+function startDragSG(ev,id){ ev.preventDefault(); sg._moved=false;
+  const svg=document.getElementById('sgSvg');
+  const pt=svg.createSVGPoint();
+  function move(e){ pt.x=e.clientX;pt.y=e.clientY; const loc=pt.matrixTransform(svg.getScreenCTM().inverse());
+    sg.pos[id]={x:loc.x,y:loc.y}; sg._moved=true; renderSG(sg._label); }
+  function up(){ window.removeEventListener('mousemove',move); window.removeEventListener('mouseup',up); setTimeout(()=>sg._moved=false,50); }
+  window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+}
+// barra de filtros/controles del subgrafo
+function buildSgBar(label){
+  sg._label=label;
+  const bar=document.getElementById('sgBar'); if(!bar) return;
+  const lobes=[...new Set([...sg.ids].map(i=>idx[i].lobe))];
+  bar.innerHTML='<span class="gchip" data-sg="path">↔ ruta entre selección…</span>'+
+    '<span class="gchip" data-sg="agents">＋ agentes</span>'+
+    '<span class="gchip" data-sg="clear">⟲ reconstruir</span>'+
+    lobes.map(l=>`<span class="gchip on" data-lobe="${l}" style="border-color:${LOBES[l].color}">${LOBES[l].name.split(' ')[0]}</span>`).join('');
+  bar.querySelectorAll('[data-lobe]').forEach(c=>c.onclick=()=>{ // ocultar/mostrar lóbulo
+    c.classList.toggle('on'); const off=!c.classList.contains('on'); const l=c.dataset.lobe;
+    document.querySelectorAll('#sgNodes .sg-node').forEach(g=>{ if(idx[g.dataset.id].lobe===l) g.style.display=off?'none':''; });
+    document.querySelectorAll('#sgEdges .sg-edge').forEach(e=>{ if(idx[e.dataset.a].lobe===l||idx[e.dataset.b].lobe===l) e.style.display=off?'none':''; });
+  });
+  bar.querySelector('[data-sg="agents"]').onclick=()=>{ ['freedom','equality','safety','culture','protocolo'].forEach(id=>{ if(!sg.ids.has(id)){sg.ids.add(id);} });
+    layoutSG(); renderSG(label); buildSgBar(label); document.getElementById('sgInfo').textContent='Añadidos los 4 agentes y el protocolo al subgrafo.'; };
+  bar.querySelector('[data-sg="clear"]').onclick=()=>{ document.getElementById('gOut').innerHTML=genGrafo(sg._label||label, topicNodes(selTopic.value)); wireGenActions(sg._label||label); };
+  bar.querySelector('[data-sg="path"]').onclick=()=>pathMode(label);
+}
+// modo ruta: selecciona 2 nodos y resalta el camino más corto entre ellos
+let pathPick=[];
+function pathMode(label){
+  pathPick=[]; document.getElementById('sgInfo').innerHTML='<b>Modo ruta:</b> haz clic en dos nodos para ver el camino más corto entre ellos.';
+  const gN=document.getElementById('sgNodes');
+  const handler=(ev)=>{ const g=ev.target.closest('.sg-node'); if(!g)return; ev.stopPropagation();
+    pathPick.push(g.dataset.id);
+    if(pathPick.length===2){ gN.removeEventListener('click',handler,true); showPath(pathPick[0],pathPick[1],label); }
+    else document.getElementById('sgInfo').innerHTML='Origen: <b>'+esc(idx[pathPick[0]].l.replace(/\n/g,' '))+'</b>. Elige el destino.';
+  };
+  gN.addEventListener('click',handler,true);
+}
+function showPath(a,b,label){
+  // BFS sobre el grafo completo, restringiendo a aristas existentes
+  const prev={},Q=[a],seen=new Set([a]);
+  while(Q.length){ const u=Q.shift(); if(u===b)break; (adj[u]||[]).forEach(v=>{ if(!seen.has(v)){seen.add(v);prev[v]=u;Q.push(v);} }); }
+  if(!seen.has(b)){ document.getElementById('sgInfo').textContent='No hay ruta entre esos conceptos.'; return; }
+  const path=[b]; let c=b; while(c!==a){ c=prev[c]; path.unshift(c); }
+  // asegurar que todos los nodos del camino están en el subgrafo
+  path.forEach(id=>{ if(!sg.ids.has(id)){ sg.ids.add(id); sg.pos[id]={x:60+Math.random()*520,y:40+Math.random()*340}; } });
+  renderSG(label); buildSgBar(label);
+  // resaltar aristas del camino
+  for(let i=0;i<path.length-1;i++){ document.querySelectorAll('#sgEdges .sg-edge').forEach(e=>{ if((e.dataset.a===path[i]&&e.dataset.b===path[i+1])||(e.dataset.b===path[i]&&e.dataset.a===path[i+1])) e.classList.add('hot'); }); }
+  document.getElementById('sgInfo').innerHTML='<b>Ruta ('+(path.length-1)+' pasos):</b> '+path.map(id=>esc(idx[id].l.replace(/\n/g,' '))).join(' → ');
 }
 
 // ---------- TAREAS (previsualizador: completar + progreso en vivo) ----------

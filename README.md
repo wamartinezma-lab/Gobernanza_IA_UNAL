@@ -151,6 +151,7 @@ Permite **configurar una iniciativa de IA** (tipo de sistema, origen, datos y al
   - **💡 Ideas** — tarjetas con deslizadores de **impacto/esfuerzo** que **reordenan por prioridad en tiempo real**, votar 👍 / descartar, filtro por lóbulo y «ver en el grafo».
   - **📄 Informe** — documento con **secciones colapsables**, toggles de **recomendaciones** y **resaltar riesgo**, y contador de componentes por sección.
   - **📊 Gráfico** — conmutable entre **barras · dona · radar** (SVG animado), con **tooltips** al pasar el mouse y **clic en un segmento para resaltar ese lóbulo** en el grafo.
+  - **🕸 Grafo dinámico** — construye un **subgrafo consultable y manipulable** según la necesidad de información: por **tema** o por **texto libre** (reusa el motor de recuperación del cerebro). Nodos **seleccionables** (consulta rol y conexiones), **arrastrables**, **doble clic para expandir vecinos**, filtro por lóbulo, **＋ agentes**, **↔ ruta más corta** entre dos conceptos (BFS) y «ver en el cerebro principal». Responde a las consultas mostrando exactamente los conceptos y relaciones pertinentes.
   - **✅ Tareas** — lista con **checkboxes**, **barra de progreso en vivo** y filtro por prioridad.
   - Se elige el **tema/foco** (todo el modelo, un lóbulo o un nodo y su vecindad) y cada salida se puede **copiar, descargar (.txt)** o **guardar como insight** (hace crecer el cerebro).
 - **Integrado al dashboard:** el dashboard incluye la pestaña **🧠 Cerebro digital**, que embebe el cerebro (iframe con carga diferida) y un enlace para abrirlo a pantalla completa.
